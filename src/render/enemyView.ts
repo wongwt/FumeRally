@@ -1,7 +1,7 @@
 import { faceAngle, lerpAngle } from '../core/math';
 import type { Enemy } from '../sim/enemies';
 import { posX, posY } from '../sim/movement';
-import { makeSedan, type CarModel } from './carModel';
+import { makeCar, type CarModel } from './carModel';
 import { wx, wz } from './coords';
 import { COL } from './palette';
 import type { Stage3D } from './stage3d';
@@ -18,7 +18,7 @@ export class EnemyView {
     private readonly enemies: readonly Enemy[]
   ) {
     this.cars = enemies.map(() => {
-      const car = makeSedan(COL.enemy, false);
+      const car = makeCar('sedan', COL.enemy);
       stage.actorGroup.add(car.group);
       return car;
     });

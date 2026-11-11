@@ -1,20 +1,41 @@
+import { CARS, type CarId } from '../config/cars';
 import { faceAngle, lerpAngle } from '../core/math';
 import { posX, posY } from '../sim/movement';
 import type { Sim } from '../sim/sim';
-import { makeSedan } from './carModel';
+import { makeCar, type CarModel } from './carModel';
 import { wx, wz } from './coords';
-import { COL } from './palette';
 import type { Stage3D } from './stage3d';
 
-/** The player's car: follows the sim, spins away when crashing and goes rainbow when invincible. */
+/**
+ * The player's car: follows the sim, spins away when crashing, flashes after absorbing a hit,
+ * shows its armor shield and goes rainbow when invincible.
+ */
 export class PlayerView {
-  private readonly car = makeSedan(COL.player, true, true);
+  private car: CarModel;
   private heading = faceAngle(0, -1);
   private powered = false;
-  private baseColor: number = COL.player;
+  private baseColor: number;
 
-  constructor(stage: Stage3D) {
+  constructor(
+    private readonly stage: Stage3D,
+    carId: CarId = 'sedan'
+  ) {
+    this.baseColor = CARS[carId].color;
+    this.car = makeCar(carId, this.baseColor, { stripe: true, player: true });
     stage.actorGroup.add(this.car.group);
+  }
+
+  /** Swaps the model for another car, keeping position and heading. */
+  setCar(id: CarId): void {
+    const old = this.car.group;
+    this.stage.actorGroup.remove(old);
+    this.car.bodyMat.dispose();
+    this.baseColor = CARS[id].color;
+    this.car = makeCar(id, this.baseColor, { stripe: true, player: true });
+    this.car.group.position.copy(old.position);
+    this.car.group.rotation.y = old.rotation.y;
+    this.powered = false;
+    this.stage.actorGroup.add(this.car.group);
   }
 
   /**
@@ -43,7 +64,10 @@ export class PlayerView {
       if (g.scale.x !== 1) g.scale.setScalar(1);
       this.heading = lerpAngle(this.heading, faceAngle(sim.player.fx, sim.player.fy), 1 - Math.exp(-16 * dt));
       g.rotation.y = this.heading;
+      // flash while the armor's grace period protects the car
+      g.visible = !(sim.hitT > 0 && Math.floor(sim.time * 14) % 2 === 0);
     }
+    if (this.car.shield) this.car.shield.visible = sim.armor > 0 && sim.power <= 0 && sim.phase !== 'dying';
     this.applyPowerLook(sim);
   }
 
