@@ -1,3 +1,4 @@
+import { newlyUnlockedCar, type CarId } from '../config/cars';
 import type { Sim } from '../sim/sim';
 import type { GhostStore } from '../storage/ghosts';
 import { stageKey, type Records } from '../storage/records';
@@ -8,6 +9,8 @@ export interface ClearInfo {
   bestPrev: number | null;
   /** This clear set a new best time (and replaced the ghost). */
   newBest: boolean;
+  /** A car this clear unlocked, if any. */
+  unlocked: CarId | null;
 }
 
 /**
@@ -15,7 +18,9 @@ export interface ClearInfo {
  * leaderboard runs. It also hands the right ghost to each stage as it loads.
  */
 export class Progress {
-  lastClear: ClearInfo = { bestPrev: null, newBest: false };
+  lastClear: ClearInfo = { bestPrev: null, newBest: false, unlocked: null };
+  /** A newly unlocked car still waiting to be announced; the game clears it once shown. */
+  pendingUnlock: CarId | null = null;
 
   constructor(
     private readonly sim: Sim,
@@ -41,11 +46,14 @@ export class Progress {
 
   private onClear(e: { time: number; flawless: boolean; path: number[]; gems: number[] }): void {
     const { sim, records } = this;
+    const carLvBefore = records.data.carLv;
     records.noteStageCleared(sim.challengeKey, sim.level);
+    const unlocked = newlyUnlockedCar(carLvBefore, records.data.carLv);
+    this.pendingUnlock = unlocked;
     if (sim.challengeKey === 'N') records.data.hi = Math.max(records.data.hi, sim.hi);
     const key = this.stageKey(sim.level);
     const prev = records.bestTime(key);
-    this.lastClear = { bestPrev: prev ?? null, newBest: false };
+    this.lastClear = { bestPrev: prev ?? null, newBest: false, unlocked };
     // only flawless clears (no car lost on this stage) may set the best time and the ghost
     if (e.flawless && (prev === undefined || e.time < prev) && e.path.length >= 4) {
       const t = Math.round(e.time * 10) / 10;

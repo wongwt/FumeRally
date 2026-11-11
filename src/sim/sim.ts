@@ -1,4 +1,5 @@
 import {
+  ARMOR_GRACE,
   BONUS_EVERY,
   BONUS_PERFECT_POINTS,
   BONUS_SECOND_POINTS,
@@ -18,7 +19,6 @@ import {
   KNOCK_POINTS,
   KNOCK_RELEASE,
   MAX_COMBO,
-  PLAYER_SPEED,
   POWER_TIME,
   PUFF_COOLDOWN,
   PUFF_COST,
@@ -26,6 +26,10 @@ import {
   READY_TIME,
   RESPAWN_FUEL,
   ROCK_POINTS,
+  SIREN_COOLDOWN,
+  SIREN_RANGE,
+  SIREN_START,
+  SIREN_STUN,
   SPECIAL_FIRST,
   SPECIAL_FUEL,
   SPECIAL_MIN_DISTANCE,
@@ -40,6 +44,7 @@ import {
   ROWS,
   type Vec
 } from '../config/constants';
+import { CARS, type CarDef, type CarId } from '../config/cars';
 import { Emitter } from '../core/events';
 import { buildMaze, mazeSeed, type Maze } from '../core/maze';
 import { Pathfinder } from '../core/pathfinding';
@@ -98,7 +103,12 @@ export interface SimEvents {
   /** The bonus stage ended; `award` is 0 when time ran out. */
   bonusEnd: { perfect: boolean; award: number };
   powerUp: { x: number; y: number };
-  rockSmashed: { rock: Rock; points: number };
+  /** `crush` is true when a rock-crushing car did it (no invincibility needed). */
+  rockSmashed: { rock: Rock; points: number; crush: boolean };
+  /** Armor absorbed a hit from a rock or a chaser. */
+  armorBroke: { x: number; y: number };
+  /** The police siren stunned `count` chasers. */
+  siren: { x: number; y: number; count: number };
   enemyKnocked: { enemy: Enemy; points: number; x: number; y: number };
   gameOver: { score: number; newRecord: boolean };
 }
@@ -126,7 +136,7 @@ export class Sim {
   /** Board key: 'N' or 'C:<code>'. Set with the seed by whoever picks the challenge. */
   challengeKey = 'N';
   /** Id of the car being driven (affects which best times and ghosts apply). */
-  carId = 'sedan';
+  carId: CarId = 'sedan';
   bonus = false;
 
   score = 0;
@@ -181,12 +191,32 @@ export class Sim {
     rand: () => this.rand()
   };
 
-  /** Car stats; the garage swaps these in M9. */
-  speed = PLAYER_SPEED;
-  drain = 1;
+  /** The car being driven; `speed` and `drain` are copied from it. */
+  car: CarDef = CARS.sedan;
+  speed: number = CARS.sedan.speed;
+  drain: number = CARS.sedan.drain;
+  /** Hits the armor can still absorb this life. */
+  armor = 0;
+  /** Seconds of post-hit invulnerability left (armor cars). */
+  hitT = 0;
+  /** Seconds until the siren can fire again. */
+  sirenT = 0;
+  /**
+   * While true the stage-clear screen waits (a dialog is open). The game sets it; the sim
+   * only needs to know not to move on.
+   */
+  holdClear = false;
 
   constructor() {
     this.loadLevel(1, false);
+  }
+
+  /** Switches car. Takes effect immediately; armor and siren are refilled when the stage (re)starts. */
+  setCar(id: CarId): void {
+    this.car = CARS[id];
+    this.carId = id;
+    this.speed = this.car.speed;
+    this.drain = this.car.drain;
   }
 
   /** Replaces the level's rocks. Rocks block chasers, so the lookup grid is rebuilt with them. */
@@ -260,6 +290,7 @@ export class Sim {
   update(dt: number, want: Vec | null, smoke = false): void {
     this.time += dt;
     if (this.phase === 'paused') return;
+    if (this.phase === 'clear' && this.holdClear) return;
     this.stateT += dt;
     this.ageClouds(dt);
     switch (this.phase) {
@@ -310,6 +341,9 @@ export class Sim {
     this.clouds = [];
     this.smokeCd = 0;
     this.power = 0;
+    this.armor = this.car.armor;
+    this.hitT = 0;
+    this.sirenT = SIREN_START;
     this.events.emit('respawn', {});
   }
 
@@ -344,6 +378,7 @@ export class Sim {
       }
     }
     if (this.power > 0) this.power = Math.max(0, this.power - dt);
+    if (this.hitT > 0) this.hitT = Math.max(0, this.hitT - dt);
     if (this.mult > 1) {
       this.comboT -= dt;
       if (this.comboT <= 0) this.mult = 1;
@@ -356,6 +391,7 @@ export class Sim {
     if (smoke && this.smokeCd <= 0 && !this.bonus) this.puff();
     this.moveEnemies(dt);
     this.stunEnemiesInSmoke();
+    if (this.car.siren) this.fireSiren(dt);
 
     const px = posX(p);
     const py = posY(p);
@@ -381,8 +417,13 @@ export class Sim {
 
     for (const r of this.rocks) {
       if (r.broken || Math.hypot(r.x - px, r.y - py) >= 0.62) continue;
-      if (this.power > 0) {
-        this.breakRock(r);
+      if (this.power > 0 || this.car.crush) {
+        this.breakRock(r, this.power <= 0);
+      } else if (this.armor > 0) {
+        this.armor -= 1;
+        this.hitT = ARMOR_GRACE;
+        this.breakRock(r, false);
+        this.events.emit('armorBroke', { x: r.x, y: r.y });
       } else {
         this.crash('rock');
         return;
@@ -395,9 +436,16 @@ export class Sim {
       if (this.power > 0) {
         this.knockOut(en);
         this.knockPow += 1;
-      } else if (en.stun <= 0) {
-        this.crash('caught');
-        return;
+      } else if (en.stun <= 0 && this.hitT <= 0) {
+        if (this.armor > 0) {
+          this.armor -= 1;
+          this.hitT = ARMOR_GRACE;
+          this.knockOut(en, false);
+          this.events.emit('armorBroke', { x: px, y: py });
+        } else {
+          this.crash('caught');
+          return;
+        }
       }
     }
   }
@@ -440,24 +488,45 @@ export class Sim {
     this.events.emit('powerUp', { x: sp.x, y: sp.y });
   }
 
-  /** Smashes a rock (invincible player): it disappears and stops blocking chasers. */
-  private breakRock(r: Rock): void {
+  /** Smashes a rock: it disappears and stops blocking chasers. */
+  private breakRock(r: Rock, crush: boolean): void {
     r.broken = true;
     this.rockGrid[r.y * COLS + r.x] = 0;
     this.addScore(ROCK_POINTS);
-    this.events.emit('rockSmashed', { rock: r, points: ROCK_POINTS });
+    this.events.emit('rockSmashed', { rock: r, points: ROCK_POINTS, crush });
   }
 
-  /** Sends a chaser back home for a while (invincible player ramming it). */
-  private knockOut(en: Enemy): void {
+  /** Police siren: stuns chasers close to the car, then recharges. It stays ready until one is near. */
+  private fireSiren(dt: number): void {
+    this.sirenT = Math.max(0, this.sirenT - dt);
+    if (this.sirenT > 0) return;
+    const sx = posX(this.player);
+    const sy = posY(this.player);
+    let count = 0;
+    for (const en of this.enemies) {
+      if (!en.active || en.release > 0 || en.stun > 0 || en.immune > 0) continue;
+      if (Math.hypot(posX(en) - sx, posY(en) - sy) >= SIREN_RANGE) continue;
+      en.stun = SIREN_STUN;
+      count++;
+    }
+    if (!count) return;
+    this.sirenT = SIREN_COOLDOWN;
+    this.events.emit('siren', { x: sx, y: sy, count });
+  }
+
+  /**
+   * Sends a chaser back home for a while. `scored` is false when armor did it (no points).
+   */
+  private knockOut(en: Enemy, scored = true): void {
     const x = posX(en);
     const y = posY(en);
     Object.assign(en, { tx: en.home.x, ty: en.home.y, prog: 0, dx: 0, dy: 0 });
     en.release = KNOCK_RELEASE;
     en.stun = 0;
     en.immune = 0;
-    this.addScore(KNOCK_POINTS);
-    this.events.emit('enemyKnocked', { enemy: en, points: KNOCK_POINTS, x, y });
+    const points = scored ? KNOCK_POINTS : 0;
+    this.addScore(points);
+    this.events.emit('enemyKnocked', { enemy: en, points, x, y });
   }
 
   private endBonus(perfect: boolean): void {

@@ -25,9 +25,6 @@ export const DIRS = {
 export type DirName = keyof typeof DIRS;
 export const DIR_LIST: readonly Vec[] = [DIRS.up, DIRS.down, DIRS.left, DIRS.right];
 
-/** Sedan speed in tiles per second; other cars override this once the garage lands. */
-export const PLAYER_SPEED = 5.3;
-
 /** Per-second fuel use of the sedan; other cars scale it. */
 export const FUEL_DRAIN = 1.15;
 export const GEM_FUEL = 9;
@@ -80,3 +77,12 @@ export const BONUS_EVERY = 3;
 export const BONUS_TIME = 30;
 export const BONUS_PERFECT_POINTS = 2000;
 export const BONUS_SECOND_POINTS = 100;
+
+/** Armor: after absorbing a hit the car is invulnerable (and flashes) for this long. */
+export const ARMOR_GRACE = 1.5;
+
+/** Police siren: starts ready after a short delay, stuns chasers in range, then recharges. */
+export const SIREN_START = 3;
+export const SIREN_COOLDOWN = 8;
+export const SIREN_RANGE = 2.6;
+export const SIREN_STUN = 2.0;

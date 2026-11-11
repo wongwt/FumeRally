@@ -1,4 +1,5 @@
 import { expect } from 'vitest';
+import type { CarId } from '../../src/config/cars';
 import { READY_TIME } from '../../src/config/constants';
 import type { Enemy } from '../../src/sim/enemies';
 import { Sim } from '../../src/sim/sim';
@@ -22,8 +23,9 @@ export const rock = (x: number, y: number): Rock => ({
 });
 
 /** A sim in the 'play' phase with the car parked on a known tile and a controlled set of gems. */
-export function playing(gems: Gem[] = [gem(1, 1)], rocks: Rock[] = []): Sim {
+export function playing(gems: Gem[] = [gem(1, 1)], rocks: Rock[] = [], car: CarId = 'sedan'): Sim {
   const sim = new Sim();
+  sim.setCar(car);
   sim.startGame();
   run(sim, READY_TIME + 0.01);
   expect(sim.phase).toBe('play');

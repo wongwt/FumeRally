@@ -66,4 +66,6 @@ export function bindSfx(events: Emitter<SimEvents>, sfx: SoundBank): void {
   events.on('go', () => sfx.go());
   events.on('powerUp', () => sfx.power());
   events.on('rockSmashed', () => sfx.smash());
+  events.on('armorBroke', () => sfx.smash());
+  events.on('siren', () => sfx.stun());
 }

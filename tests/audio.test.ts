@@ -232,15 +232,17 @@ describe('bindSfx', () => {
     sim.events.emit('bonusEnd', { perfect: true, award: 0 });
     sim.events.emit('go', {});
     sim.events.emit('powerUp', { x: 0, y: 0 });
-    sim.events.emit('rockSmashed', { rock, points: 20 });
+    sim.events.emit('rockSmashed', { rock, points: 20, crush: false });
+    sim.events.emit('armorBroke', { x: 0, y: 0 });
+    sim.events.emit('siren', { x: 0, y: 0, count: 1 });
     expect(spies.puff).toHaveBeenCalledTimes(1);
     expect(spies.empty).toHaveBeenCalledTimes(1);
-    expect(spies.stun).toHaveBeenCalledTimes(2);
+    expect(spies.stun).toHaveBeenCalledTimes(3); // stunned, knocked, siren
     expect(spies.crash).toHaveBeenCalledTimes(1);
     expect(spies.clear).toHaveBeenCalledTimes(2);
     expect(spies.go).toHaveBeenCalledTimes(1);
     expect(spies.power).toHaveBeenCalledTimes(1);
-    expect(spies.smash).toHaveBeenCalledTimes(1);
+    expect(spies.smash).toHaveBeenCalledTimes(2); // rock smash, armor break
   });
 });
 

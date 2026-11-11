@@ -42,7 +42,7 @@ describe('Progress: stage clears', () => {
     expect(key).toBe('N:1');
     expect(records.bestTime(key)).toBeGreaterThan(1.9);
     expect(ghosts.get(key)?.p.length).toBeGreaterThan(10);
-    expect(progress.lastClear).toEqual({ bestPrev: null, newBest: true });
+    expect(progress.lastClear).toEqual({ bestPrev: null, newBest: true, unlocked: null });
   });
 
   it('only a faster flawless clear replaces the best time and ghost', () => {
@@ -54,7 +54,7 @@ describe('Progress: stage clears', () => {
     run(sim, 1.9);
     clearStage(sim, 6); // slower
     expect(records.bestTime('N:1')).toBe(first);
-    expect(progress.lastClear).toEqual({ bestPrev: first, newBest: false });
+    expect(progress.lastClear).toEqual({ bestPrev: first, newBest: false, unlocked: null });
     sim.startGame();
     run(sim, 1.9);
     clearStage(sim, 2); // faster
@@ -67,7 +67,7 @@ describe('Progress: stage clears', () => {
     const { sim, progress, records } = setup();
     clearStage(sim, 2, true);
     expect(records.bestTime('N:1')).toBeUndefined();
-    expect(progress.lastClear).toEqual({ bestPrev: null, newBest: false });
+    expect(progress.lastClear).toEqual({ bestPrev: null, newBest: false, unlocked: null });
     expect(records.data.cleared).toBe(1); // still counts as progress
   });
 
