@@ -33,10 +33,11 @@ The build output is one HTML file with all code inlined. It runs by double-click
 src/
   config/   game constants (grid size, start, homes, directions)
   core/     pure, tested logic (math, RNG, maze generation, BFS pathfinding)
-  sim/      pure game rules (grid movement, fixed-timestep stepper)
+  sim/      pure game rules (movement, spawning, fuel/gems/lives, phase state machine)
   input/    keyboard, swipe and d-pad → one wanted direction
   game/     glue between sim, render and input
-  render/   Three.js scene, maze meshes and camera rig
+  render/   Three.js scene, maze/world meshes, effects and camera rig
+  ui/       HUD, banners and floating popups
   i18n/     message tables (zh-TW, en) and the t() lookup
 tests/      Vitest unit tests
 ```
