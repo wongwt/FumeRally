@@ -1,8 +1,10 @@
-import { START } from '../config/constants';
+import { START, type DirName } from '../config/constants';
+import { normCode, type ChallengeMode } from '../core/challenge';
 import { PlayerInput } from '../input/playerInput';
 import type { ViewMode } from '../render/cameraRig';
 import { COL } from '../render/palette';
 import { EnemyView } from '../render/enemyView';
+import { GhostView } from '../render/ghostView';
 import { Fx } from '../render/fx';
 import { PlayerView } from '../render/playerView';
 import { SmokeView } from '../render/smokeView';
@@ -11,8 +13,15 @@ import type { Stage3D } from '../render/stage3d';
 import { WorldView } from '../render/worldView';
 import { posX, posY } from '../sim/movement';
 import { Sim } from '../sim/sim';
+import { ChallengeState } from './challenge';
+import { Progress } from './progress';
 import { FixedStepper } from '../sim/stepper';
-import type { Banner } from '../ui/banner';
+import { t } from '../i18n';
+import type { GhostStore } from '../storage/ghosts';
+import type { Prefs } from '../storage/prefs';
+import type { Records } from '../storage/records';
+import { Banner, type ScreenContext } from '../ui/banner';
+import type { ChallengePanel, PanelModel } from '../ui/challengePanel';
 import type { Hud } from '../ui/hud';
 import type { Popups } from '../ui/popups';
 import type { Radar } from '../ui/radar';
@@ -20,43 +29,69 @@ import type { Radar } from '../ui/radar';
 /** Simulation steps at 120 Hz regardless of display refresh rate. */
 const STEP = 1 / 120;
 
+/** Saved data the game reads and writes. */
+export interface GameServices {
+  records: Records;
+  ghosts: GhostStore;
+  prefs: Prefs;
+}
+
 export interface GameUi {
   hud: Hud;
-  banner: Banner;
+  /** Element the title / pause / clear cards are drawn into. */
+  bannerEl: HTMLElement;
   popups: Popups;
   radar: Radar;
-  /** Called whenever the pause state may have changed (to relabel the button). */
+  panel: ChallengePanel;
+  /** Called whenever the phase may have changed (to relabel buttons, close the mobile drawer). */
   onPhase?: (sim: Sim) => void;
+  /** Start was requested with a level code that is not valid yet. */
+  onInvalidStart?: () => void;
 }
+
+const CODE_APPLY_DELAY_MS = 150;
+const BEST_TIME_STAGES = 30;
 
 /** Glue between the simulation, the 3D stage, input and the UI. */
 export class Game {
   readonly sim = new Sim();
   readonly input = new PlayerInput();
+  readonly progress: Progress;
+  readonly challenge: ChallengeState;
+  private readonly banner: Banner;
   private readonly player: PlayerView;
   private readonly world: WorldView;
   private readonly fx: Fx;
   private readonly enemyView: EnemyView;
   private readonly smokeView: SmokeView;
   private readonly specialView: SpecialView;
+  private readonly ghostView: GhostView;
+  private codeTimer: ReturnType<typeof setTimeout> | undefined;
   private readonly stepper = new FixedStepper(STEP, 0.1);
   private shake = 0;
   private last = 0;
 
   constructor(
     private readonly stage: Stage3D,
-    private readonly ui: GameUi
+    private readonly ui: GameUi,
+    private readonly services: GameServices
   ) {
+    this.progress = new Progress(this.sim, services.records, services.ghosts);
+    this.challenge = new ChallengeState(services.prefs);
+    this.banner = new Banner(ui.bannerEl, () => this.screenContext());
     this.player = new PlayerView(stage);
     this.world = new WorldView(stage);
     this.fx = new Fx(stage.fxGroup);
     this.enemyView = new EnemyView(stage, this.sim.enemies);
     this.smokeView = new SmokeView(stage.fxGroup);
     this.specialView = new SpecialView(stage);
+    this.ghostView = new GhostView(stage);
     this.listen();
-    this.onLevelLoaded();
-    ui.banner.render(this.sim);
-    ui.onPhase?.(this.sim);
+  }
+
+  /** Applies the saved challenge and draws the first screen. Call once after construction. */
+  init(): void {
+    this.applyChallenge();
   }
 
   get view(): ViewMode {
@@ -65,10 +100,135 @@ export class Game {
 
   /** Space / Enter / tap: start a game or resume from pause. Returns true if it did either. */
   confirm(): boolean {
-    if (this.sim.wantsStart) this.sim.startGame();
+    if (this.sim.wantsStart) this.begin();
     else if (this.sim.phase === 'paused') this.sim.togglePause();
     else return false;
     return true;
+  }
+
+  /** Starts a game with the selected challenge, unless a level code is still missing. */
+  begin(): void {
+    const { sim } = this;
+    if (!sim.wantsStart) return;
+    if (!this.challenge.valid) {
+      this.ui.onInvalidStart?.();
+      return;
+    }
+    clearTimeout(this.codeTimer);
+    // a code board always starts at stage 1; only normal mode has a start-stage picker
+    if (this.challenge.key !== 'N') sim.startLevel = 1;
+    sim.startGame();
+  }
+
+  /** Arrow keys on the menu screens: up/down pick the start stage. Returns true if handled. */
+  menuDir(dir: DirName): boolean {
+    if (!this.sim.wantsStart) return false;
+    if (dir === 'up' || dir === 'down') this.changeStartLevel(dir === 'up' ? 1 : -1);
+    return true;
+  }
+
+  changeStartLevel(delta: 1 | -1): void {
+    const { sim } = this;
+    if (!sim.wantsStart || this.challenge.key !== 'N') return;
+    const max = this.services.records.data.cleared + 1;
+    const next = Math.max(1, Math.min(max, sim.startLevel + delta));
+    if (next === sim.startLevel) return;
+    sim.startLevel = next;
+    this.banner.render(sim);
+  }
+
+  selectMode(mode: ChallengeMode): void {
+    if (!this.sim.wantsStart) return;
+    this.challenge.setMode(mode);
+    this.applyChallenge();
+  }
+
+  /** The level-code field changed. Custom codes re-roll the maze preview shortly after typing stops. */
+  typeCode(raw: string): void {
+    if (!this.sim.wantsStart) return;
+    this.challenge.setCode(normCode(raw));
+    if (this.challenge.mode !== 'custom') return;
+    clearTimeout(this.codeTimer);
+    this.codeTimer = setTimeout(() => this.applyChallenge(), CODE_APPLY_DELAY_MS);
+    this.refreshPanel();
+  }
+
+  randomCode(): void {
+    if (!this.sim.wantsStart) return;
+    this.challenge.randomize();
+    this.applyChallenge();
+  }
+
+  setGhost(on: boolean): void {
+    this.services.prefs.ghostOn = on;
+    this.services.prefs.saveChallenge();
+    this.sim.ghostOn = on;
+  }
+
+  /**
+   * Makes the selected challenge current: its board, seed, best score and preview maze.
+   * Only valid on the title and game-over screens.
+   */
+  applyChallenge(): void {
+    const { sim, challenge } = this;
+    const key = challenge.key;
+    sim.challengeKey = key;
+    sim.challengeSeed = challenge.seed;
+    sim.ghostOn = this.services.prefs.ghostOn;
+    sim.hi = this.progress.best();
+    sim.startLevel =
+      key === 'N' ? Math.max(1, Math.min(sim.startLevel, this.services.records.data.cleared + 1)) : 1;
+    sim.loadLevel(sim.startLevel, false);
+    this.refreshScreens();
+  }
+
+  /** Redraws the banner and the challenge panel. */
+  refreshScreens(): void {
+    this.banner.render(this.sim);
+    this.refreshPanel();
+    this.ui.onPhase?.(this.sim);
+  }
+
+  refreshPanel(): void {
+    this.ui.panel.update(this.panelModel());
+  }
+
+  private challengeLabel(): string {
+    const { challenge } = this;
+    if (challenge.mode === 'normal') return t('mode.labelNormal');
+    if (challenge.mode === 'daily') return t('mode.labelDaily', { code: challenge.code });
+    return t('mode.labelCustom', { code: challenge.customCode || '—' });
+  }
+
+  private panelModel(): PanelModel {
+    const { sim, challenge, services } = this;
+    const stageTimes: PanelModel['stageTimes'] = [];
+    for (let lv = 1; lv <= BEST_TIME_STAGES; lv++) {
+      const seconds = services.records.bestTime(this.progress.stageKey(lv));
+      if (seconds !== undefined) stageTimes.push({ level: lv, seconds });
+    }
+    return {
+      mode: challenge.mode,
+      customCode: challenge.customCode,
+      dailyCode: challenge.mode === 'daily' ? challenge.code : '',
+      valid: challenge.valid,
+      locked: !sim.wantsStart,
+      ghostOn: services.prefs.ghostOn,
+      label: this.challengeLabel(),
+      rows: services.records.boardOf(sim.challengeKey),
+      stageTimes
+    };
+  }
+
+  private screenContext(): ScreenContext {
+    const { sim, services } = this;
+    const cleared = services.records.data.cleared;
+    return {
+      challengeLabel: this.challengeLabel(),
+      picker: sim.challengeKey === 'N' && cleared >= 1 ? { level: sim.startLevel, max: cleared + 1 } : null,
+      records: services.records.boardOf(sim.challengeKey),
+      clear: this.progress.lastClear
+    };
   }
 
   togglePause(): void {
@@ -81,9 +241,8 @@ export class Game {
 
   /** Re-renders text that depends on the language. */
   refreshText(): void {
-    this.ui.banner.render(this.sim);
     this.ui.hud.invalidate();
-    this.ui.onPhase?.(this.sim);
+    this.refreshScreens();
   }
 
   start(): void {
@@ -120,6 +279,20 @@ export class Game {
       this.fx.ring(x, y, COL.enemy, 1.8);
       this.shake = Math.max(this.shake, 0.2);
     });
+    events.on('ghostSplit', ({ delta, x, y }) => {
+      popups.show(
+        (delta <= 0 ? '' : '+') + delta.toFixed(1) + 's',
+        x,
+        y - 0.8,
+        delta <= 0 ? '#79e07a' : '#ff5b4b'
+      );
+    });
+    events.on('gameOver', () => {
+      // progress made this run may have raised the start-stage limit
+      const cleared = this.services.records.data.cleared;
+      this.sim.startLevel =
+        this.challenge.key === 'N' ? Math.max(1, Math.min(this.sim.startLevel, cleared + 1)) : 1;
+    });
     events.on('enemyStunned', ({ points, x, y }) => {
       popups.show('+' + points, x, y, '#d5dde2');
     });
@@ -127,10 +300,7 @@ export class Game {
       this.shake = 0.45;
       this.fx.ring(x, y, COL.enemy, 2.2);
     });
-    events.on('phase', () => {
-      this.ui.banner.render(this.sim);
-      this.ui.onPhase?.(this.sim);
-    });
+    events.on('phase', () => this.refreshScreens());
   }
 
   private onLevelLoaded(): void {
@@ -163,6 +333,7 @@ export class Game {
       this.specialView.update(dt, sim.time, sim.special);
     }
     this.player.update(dt, sim);
+    this.ghostView.update(dt, sim);
     this.ui.hud.update(sim);
     if (this.shake > 0) this.shake -= dt;
     this.stage.render(dt, posX(sim.player), posY(sim.player), Math.max(0, this.shake) * 0.5);

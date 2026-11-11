@@ -1,4 +1,3 @@
-import { fnv1a } from './core/rng';
 import { AudioEngine } from './audio/engine';
 import { loadMuted, saveMuted } from './audio/settings';
 import { bindSfx, Sfx } from './audio/sfx';
@@ -7,10 +6,14 @@ import { getLang, initLang, LANGS, onLangChange, setLang, t, type Lang, type Mes
 import { bindKeyboard } from './input/keyboard';
 import { bindTouch } from './input/touch';
 import { Stage3D } from './render/stage3d';
-import { Banner } from './ui/banner';
 import { Hud } from './ui/hud';
 import { Popups } from './ui/popups';
+import { ChallengePanel } from './ui/challengePanel';
 import { Radar } from './ui/radar';
+import { GhostStore } from './storage/ghosts';
+import { Prefs } from './storage/prefs';
+import { Records } from './storage/records';
+import { browserStorage } from './storage/storage';
 
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
 const bannerEl = $('banner');
@@ -18,6 +21,14 @@ const btnPause = $<HTMLButtonElement>('btnPause');
 const btnView = $<HTMLButtonElement>('btnView');
 const btnLang = $<HTMLButtonElement>('btnLang');
 const btnMute = $<HTMLButtonElement>('btnMute');
+
+const storage = browserStorage();
+const records = new Records(storage);
+records.load();
+const ghosts = new GhostStore(storage);
+ghosts.load();
+const prefs = new Prefs(storage);
+prefs.load();
 
 const audio = new AudioEngine();
 audio.muted = loadMuted();
@@ -62,24 +73,49 @@ try {
 
 if (stage) {
   const s = stage;
-  game = new Game(s, {
-    hud: new Hud(),
-    banner: new Banner(bannerEl),
-    popups: new Popups($('stage'), (x, y) => s.rig.project(x, y)),
-    radar: new Radar($<HTMLCanvasElement>('radar')),
-    onPhase: () => {
-      btnPause.textContent = t(game?.sim.phase === 'paused' ? 'btn.resume' : 'btn.pause');
-    }
+  const playEl = $('play');
+  const panel = new ChallengePanel({
+    onMode: (mode) => game?.selectMode(mode),
+    onCode: (raw) => game?.typeCode(raw),
+    onRandom: () => game?.randomCode(),
+    onGhost: (on) => game?.setGhost(on),
+    onStart: () => game?.begin()
   });
+  game = new Game(
+    s,
+    {
+      hud: new Hud(),
+      bannerEl,
+      popups: new Popups($('stage'), (x, y) => s.rig.project(x, y)),
+      radar: new Radar($<HTMLCanvasElement>('radar')),
+      panel,
+      onPhase: (sim) => {
+        btnPause.textContent = t(sim.phase === 'paused' ? 'btn.resume' : 'btn.pause');
+        if (!sim.wantsStart) playEl.classList.remove('drawer'); // close the mobile challenge drawer once a game starts
+      },
+      onInvalidStart: () => {
+        playEl.classList.add('drawer');
+        panel.focusCode();
+      }
+    },
+    { records, ghosts, prefs }
+  );
   const g = game;
+  g.setView(prefs.view);
+  playEl.classList.toggle('scroll', g.view === 'scroll');
+  g.init();
   bindKeyboard(g.input, {
     confirm: () => g.confirm(),
     pause: () => g.togglePause(),
     toggleView: () => btnView.click(),
-    toggleMute: () => btnMute.click()
+    toggleMute: () => btnMute.click(),
+    menuDir: (dir) => g.menuDir(dir)
   });
   bindSfx(g.sim.events, new Sfx(audio));
-  bindTouch(g.input, $('stage'), () => void g.confirm());
+  bindTouch(g.input, $('stage'), () => void g.confirm(), {
+    active: () => g.sim.wantsStart,
+    step: (d) => g.changeStartLevel(d)
+  });
 
   // Browsers only allow audio after a user gesture, so (re)start it on every press, before other handlers run.
   for (const type of ['pointerdown', 'keydown']) window.addEventListener(type, () => audio.ensure(), true);
@@ -96,27 +132,31 @@ if (stage) {
   });
   btnView.addEventListener('click', () => {
     g.setView(g.view === 'scroll' ? 'full' : 'scroll');
-    $('play').classList.toggle('scroll', g.view === 'scroll');
+    playEl.classList.toggle('scroll', g.view === 'scroll');
+    prefs.view = g.view;
+    prefs.saveView();
     btnView.textContent = t(g.view === 'full' ? 'view.full' : 'view.scroll');
     btnView.blur();
   });
+  $('btnChal').addEventListener('click', () => {
+    playEl.classList.toggle('drawer');
+    $('btnChal').blur();
+  });
+  window.addEventListener('pagehide', () => records.save());
   document.addEventListener('visibilitychange', () => {
     if (document.hidden && g.sim.phase === 'play') g.togglePause();
   });
 
   if (import.meta.env.DEV) {
-    // Developer panel: pick the starting level / level code without playing up to it.
-    const panel = $('debug');
-    panel.hidden = false;
-    const apply = (): void => {
+    // Developer panel: jump to any starting stage without playing up to it.
+    $('debug').hidden = false;
+    $('level').addEventListener('input', () => {
       const level = Math.max(1, Math.min(99, Math.floor(Number($<HTMLInputElement>('level').value)) || 1));
-      const code = $<HTMLInputElement>('code').value.trim().toUpperCase();
       if (!g.sim.wantsStart) return;
       g.sim.startLevel = level;
-      g.sim.challengeSeed = code ? fnv1a(code) : 0;
       g.sim.loadLevel(level, false);
-    };
-    for (const id of ['level', 'code']) $(id).addEventListener('input', apply);
+      g.refreshScreens();
+    });
     (window as unknown as { __game: Game }).__game = g;
   }
   g.start();

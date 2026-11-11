@@ -44,7 +44,7 @@
         </div>
         <div class="stat">
           <dt data-i18n="hud.time"></dt>
-          <dd id="timeEl">0:00.0</dd>
+          <dd><span id="timeEl">0:00.0</span><span id="ghostDelta" class="delta"></span></dd>
         </div>
       </dl>
       <div class="fuel">
@@ -55,7 +55,6 @@
     <div class="debug" id="debug" hidden>
       <span>DEV</span>
       <label>Level <input id="level" type="number" min="1" max="99" value="1" /></label>
-      <label>Code <input id="code" type="text" maxlength="12" placeholder="RALLY7" /></label>
     </div>
     <div class="play scroll" id="play">
       <main class="stage" id="stage" tabindex="0">
@@ -73,6 +72,34 @@
             <li><i style="background: #b8b0a2"></i><span data-i18n="radar.rock"></span></li>
           </ul>
         </aside>
+        <section class="challenge" id="challenge" aria-label="Challenge and leaderboard">
+          <p class="radar-title">CHALLENGE</p>
+          <div class="seg" role="group">
+            <button type="button" class="seg-btn" data-mode="normal" aria-pressed="true"></button>
+            <button type="button" class="seg-btn" data-mode="daily" aria-pressed="false"></button>
+            <button type="button" class="seg-btn" data-mode="custom" aria-pressed="false"></button>
+          </div>
+          <div class="codebox">
+            <label for="codeInput" data-i18n="code.label"></label>
+            <div class="coderow">
+              <input
+                id="codeInput"
+                type="text"
+                maxlength="12"
+                autocomplete="off"
+                autocapitalize="characters"
+                spellcheck="false"
+              />
+              <button type="button" id="btnRand"></button>
+            </div>
+            <p class="hint" id="codeHint"></p>
+          </div>
+          <label class="check"
+            ><input type="checkbox" id="ghostToggle" checked /><span data-i18n="ghost.toggle"></span
+          ></label>
+          <button type="button" class="start-btn" id="btnStartChal"></button>
+          <div class="board" id="board"></div>
+        </section>
       </div>
     </div>
     <footer class="foot">
@@ -89,6 +116,7 @@
         <span><kbd>M</kbd> <span data-i18n="keys.mute"></span></span>
       </p>
       <div class="tools">
+        <button type="button" id="btnChal" class="narrow-only" data-i18n="btn.challenges"></button>
         <button type="button" id="btnView"></button>
         <button type="button" id="btnPause"></button>
         <button type="button" id="btnMute" aria-pressed="false"></button>

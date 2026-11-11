@@ -435,17 +435,14 @@ button:focus-visible {
 .side {
   flex: none;
   width: 240px;
-  display: none;
+  display: flex;
   flex-direction: column;
   gap: 10px;
   min-height: 0;
   overflow-y: auto;
 }
-.play.scroll .side {
-  display: flex;
-}
 .radar {
-  display: flex;
+  display: none;
   flex: none;
   width: 100%;
   flex-direction: column;
@@ -455,6 +452,9 @@ button:focus-visible {
   border: 1px solid var(--line);
   border-radius: 6px;
   pointer-events: none;
+}
+.play.scroll .radar {
+  display: flex;
 }
 .radar-title {
   margin: 0;
@@ -509,5 +509,214 @@ button:focus-visible {
   .radar-key,
   .radar-title {
     display: none;
+  }
+}
+
+/* ---------- Challenge panel ---------- */
+.narrow-only {
+  display: none;
+}
+.challenge {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 12px;
+  min-width: 0;
+}
+.seg {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+.seg button {
+  padding: 7px 2px;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  background: var(--bg);
+}
+.seg button[aria-pressed='true'] {
+  background: var(--line);
+  border-color: var(--player);
+  color: var(--fg);
+}
+.codebox {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+  min-width: 0;
+}
+.codebox label {
+  color: var(--dim);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+}
+.coderow {
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+}
+.coderow button {
+  flex: none;
+  padding: 8px 10px;
+}
+.coderow input {
+  flex: 1 1 0;
+  width: 0;
+  min-width: 0;
+  font: 10px/1 var(--font-pixel);
+  letter-spacing: 0.02em;
+  color: var(--fg);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 9px 6px;
+  text-transform: uppercase;
+  -webkit-user-select: text;
+  user-select: text;
+}
+.coderow input:focus-visible {
+  outline: 2px solid var(--player);
+  outline-offset: 1px;
+}
+.coderow input:disabled {
+  color: var(--dim);
+}
+.hint {
+  margin: 0;
+  color: var(--dim);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.check {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--dim);
+  font-size: 12px;
+  cursor: pointer;
+}
+.check input {
+  accent-color: var(--player);
+  margin: 0;
+}
+.start-btn {
+  border-color: var(--player);
+  color: var(--fg);
+  padding: 10px 14px;
+  font-size: 13px;
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.board {
+  display: grid;
+  gap: 4px;
+}
+.board-title {
+  margin: 0;
+  color: var(--fg);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  overflow-wrap: anywhere;
+}
+.board-sub {
+  margin: 6px 0 0;
+  color: var(--dim);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+}
+.brow {
+  display: grid;
+  grid-template-columns: 1.4em 1fr 2.2em 3.4em;
+  gap: 6px;
+  align-items: baseline;
+  font-variant-numeric: tabular-nums;
+  color: var(--dim);
+}
+.brow.head {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+}
+.brow b {
+  color: var(--fg);
+  font: 10px/1.6 var(--font-pixel);
+}
+.times {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+}
+.times b {
+  color: var(--fg);
+  font: 700 11px/1.4 var(--font-ui);
+}
+.delta {
+  font: 9px/1 var(--font-pixel);
+  margin-left: 6px;
+}
+.delta.ahead {
+  color: var(--ok);
+}
+.delta.behind {
+  color: var(--bad);
+}
+
+/* title / game-over extras */
+.records {
+  display: grid;
+  gap: 3px;
+  font-size: 12px;
+  color: var(--dim);
+  text-align: left;
+  width: min(100%, 22rem);
+}
+.records .row {
+  display: grid;
+  grid-template-columns: 1.6em 1fr auto;
+  gap: 8px;
+  align-items: baseline;
+}
+.records b {
+  color: var(--fg);
+  font: 11px/1.5 var(--font-pixel);
+  font-variant-numeric: tabular-nums;
+}
+.picker {
+  font-size: 13px;
+}
+.picker b {
+  font: 12px/1 var(--font-pixel);
+  color: var(--gem);
+}
+@media (min-width: 721px) {
+  .banner .records {
+    display: none;
+  }
+}
+
+/* Narrow screens: the challenge panel becomes a drawer opened from the footer.
+   Kept last so it overrides the desktop rules above. */
+@media (max-width: 720px) {
+  .challenge {
+    display: none;
+  }
+  .play.drawer .challenge {
+    display: flex;
+    position: absolute;
+    inset: 8px;
+    z-index: 3;
+    overflow: auto;
+  }
+  .narrow-only {
+    display: inline-block;
   }
 }
