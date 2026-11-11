@@ -24,6 +24,28 @@ export const en: Messages = {
   'error.webgl.title': 'WebGL unavailable',
   'error.webgl.body': 'This browser or device has WebGL turned off, so the game cannot be shown.',
 
+  'title.lead':
+    'Collect every gem to clear the stage. Fuel drains constantly and gems top it up. Watch out for rocks: one hit and you crash.',
+  'title.drive': 'to steer. The car drives itself',
+  'cta.start': 'Press {key} or tap the screen to start',
+  'cta.restart': 'Press {key} or tap the screen to play again',
+  'cta.resume': 'Press {key} or tap the screen to resume',
+
+  'ready.go': 'Get ready',
+  'crash.fuel': 'Out of fuel',
+  'crash.rock': 'Hit a rock',
+  'clear.title': 'Stage clear',
+  'clear.fuelBonus': 'Fuel bonus +{n}',
+  'clear.time': 'Stage time {t}',
+  'over.title': 'Game over',
+  'over.score': 'Score {n}',
+  'over.summary': 'Stages cleared {n} · {t}',
+  'over.record': 'New high score!',
+  'pause.title': 'Paused',
+
+  'btn.pause': 'Pause',
+  'btn.resume': 'Resume',
+
   'keys.or': 'or',
   'keys.drive': 'Drive',
   'keys.smoke': 'Exhaust',
