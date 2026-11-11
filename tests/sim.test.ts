@@ -1,16 +1,24 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   CLEAR_TIME,
+  CLOUD_LIFE,
+  CLOUD_STUN_AGE,
   COMBO_TIME,
   DYING_TIME,
   FUEL_BONUS,
   FUEL_DRAIN,
   GEM_FUEL,
   GEM_POINTS,
+  PUFF_COST,
+  PUFF_DROP_DISTANCE,
   READY_TIME,
   RESPAWN_FUEL,
-  START_LIVES
+  START_LIVES,
+  STUN_POINTS,
+  STUN_TIME
 } from '../src/config/constants';
+import { mulberry32 } from '../src/core/rng';
+import type { Enemy } from '../src/sim/enemies';
 import { Sim } from '../src/sim/sim';
 import type { Gem, Rock } from '../src/sim/spawn';
 
@@ -28,9 +36,13 @@ function playing(gems: Gem[] = [gem(1, 1)], rocks: Rock[] = []): Sim {
   run(sim, READY_TIME + 0.01);
   expect(sim.phase).toBe('play');
   sim.gems = gems;
-  sim.rocks = rocks;
+  sim.setRocks(rocks);
+  for (const en of sim.enemies) en.active = false; // chasers have their own tests
   return sim;
 }
+const place = (en: Enemy, x: number, y: number): void => {
+  Object.assign(en, { tx: x, ty: y, dx: 0, dy: 0, prog: 0 });
+};
 const park = (sim: Sim, x: number, y: number): void => {
   Object.assign(sim.player, { tx: x, ty: y, dx: 0, dy: 0, prog: 0 });
 };
@@ -211,7 +223,7 @@ describe('crashing', () => {
     park(sim, 13, 17);
     run(sim, DT); // takes the first gem
     sim.fuel = 20;
-    sim.rocks = [rock(sim.player.tx, sim.player.ty)];
+    sim.setRocks([rock(sim.player.tx, sim.player.ty)]);
     run(sim, DT);
     expect(sim.phase).toBe('dying');
     const respawn = vi.fn();
@@ -230,7 +242,7 @@ describe('crashing', () => {
     sim.startGame();
     run(sim, READY_TIME + 0.01);
     sim.gems = [gem(1, 1)];
-    sim.rocks = [];
+    sim.setRocks([]);
     sim.lives = 1;
     sim.score = 1234;
     sim.fuel = 0.01;
@@ -248,7 +260,7 @@ describe('crashing', () => {
     sim.startGame();
     run(sim, READY_TIME + 0.01);
     sim.gems = [gem(13, 17), gem(1, 1)];
-    sim.rocks = [];
+    sim.setRocks([]);
     park(sim, 13, 17);
     run(sim, DT);
     expect(sim.hi).toBe(100); // 100 points ties, does not beat
@@ -282,5 +294,188 @@ describe('driving', () => {
     const x1 = sim.player.tx + sim.player.dx * sim.player.prog;
     const y1 = sim.player.ty + sim.player.dy * sim.player.prog;
     expect(Math.hypot(x1 - x0, y1 - y0)).toBeGreaterThan(1);
+  });
+});
+
+describe('chasers', () => {
+  /** Level 1 with one chaser released next to the player and everything else quiet. */
+  function chased(): Sim {
+    const sim = playing([gem(1, 1)]);
+    sim.rand = mulberry32(5);
+    const en = sim.enemies[0] as Enemy;
+    en.active = true;
+    en.release = 0;
+    return sim;
+  }
+  it('stay home until their release time', () => {
+    const sim = new Sim();
+    sim.startGame();
+    run(sim, READY_TIME + 0.5);
+    const en = sim.enemies[0] as Enemy;
+    expect([en.tx, en.ty]).toEqual([en.home.x, en.home.y]);
+    run(sim, 1.5);
+    expect(en.release).toBeLessThanOrEqual(0);
+    expect(Math.hypot(en.tx - en.home.x, en.ty - en.home.y)).toBeGreaterThan(0);
+  });
+
+  it('catching the player costs a life', () => {
+    const sim = chased();
+    park(sim, 13, 17);
+    place(sim.enemies[0] as Enemy, 13, 17);
+    const crash = vi.fn();
+    sim.events.on('crash', crash);
+    run(sim, DT);
+    expect(sim.phase).toBe('dying');
+    expect(sim.crashWhy).toBe('caught');
+    expect(crash).toHaveBeenCalledWith(expect.objectContaining({ why: 'caught' }));
+  });
+
+  it('do not catch the player while still at home', () => {
+    const sim = chased();
+    const en = sim.enemies[0] as Enemy;
+    en.release = 5;
+    park(sim, 13, 17);
+    place(en, 13, 17);
+    run(sim, DT * 3);
+    expect(sim.phase).toBe('play');
+  });
+
+  it('a chaser eventually runs a stationary player down', () => {
+    const sim = chased();
+    park(sim, 13, 17);
+    place(sim.enemies[0] as Enemy, 13, 1);
+    for (let t = 0; t < 20 && sim.phase === 'play'; t += DT) sim.update(DT, null);
+    expect(sim.phase).toBe('dying');
+    expect(sim.crashWhy).toBe('caught');
+    expect(sim.lives).toBe(START_LIVES - 1);
+  });
+
+  it('go back home and are re-released after a crash', () => {
+    const sim = chased();
+    park(sim, 13, 17);
+    const en = sim.enemies[0] as Enemy;
+    place(en, 13, 17);
+    run(sim, DT + DYING_TIME + 0.05);
+    expect(sim.phase).toBe('ready');
+    expect([en.tx, en.ty]).toEqual([en.home.x, en.home.y]);
+    expect(en.release).toBeGreaterThan(0);
+  });
+});
+
+describe('exhaust smoke', () => {
+  function smoky(): { sim: Sim; en: Enemy } {
+    const sim = playing([gem(1, 1)]);
+    sim.rand = mulberry32(9);
+    const en = sim.enemies[0] as Enemy;
+    en.active = true;
+    en.release = 0;
+    return { sim, en };
+  }
+
+  it('costs fuel and drops a cloud behind the car', () => {
+    const { sim } = smoky();
+    park(sim, 13, 17);
+    Object.assign(sim.player, { fx: 1, fy: 0 });
+    const f0 = sim.fuel;
+    const puff = vi.fn();
+    sim.events.on('puff', puff);
+    run(sim, DT, null);
+    sim.update(DT, null, true);
+    expect(sim.clouds).toHaveLength(1);
+    expect(sim.clouds[0]).toMatchObject({ x: 13 - PUFF_DROP_DISTANCE, y: 17 });
+    expect(sim.fuel).toBeCloseTo(f0 - PUFF_COST - FUEL_DRAIN * DT * 2, 1);
+    expect(puff).toHaveBeenCalledTimes(1);
+  });
+
+  it('is rate limited while the button is held', () => {
+    const { sim } = smoky();
+    park(sim, 13, 17);
+    for (let t = 0; t < 1.0; t += DT) sim.update(DT, null, true);
+    expect(sim.clouds.length).toBeGreaterThanOrEqual(2);
+    expect(sim.clouds.length).toBeLessThanOrEqual(3);
+  });
+
+  it('does nothing, and says so, when the tank is too low', () => {
+    const { sim } = smoky();
+    park(sim, 13, 17);
+    sim.fuel = PUFF_COST - 0.5;
+    const empty = vi.fn();
+    sim.events.on('puffEmpty', empty);
+    sim.update(DT, null, true);
+    expect(sim.clouds).toHaveLength(0);
+    expect(empty).toHaveBeenCalledTimes(1);
+  });
+
+  it('clouds fade away after their lifetime', () => {
+    const { sim } = smoky();
+    park(sim, 13, 17);
+    sim.update(DT, null, true);
+    expect(sim.clouds).toHaveLength(1);
+    run(sim, CLOUD_LIFE + 0.1);
+    expect(sim.clouds).toHaveLength(0);
+  });
+
+  it('stuns a chaser that touches a fresh cloud and awards points', () => {
+    const { sim, en } = smoky();
+    park(sim, 13, 17);
+    sim.clouds = [{ x: 9, y: 9, age: 0 }];
+    Object.assign(en, { tx: 9, ty: 9, dx: 0, dy: 0, prog: 0 });
+    const stunned = vi.fn();
+    sim.events.on('enemyStunned', stunned);
+    run(sim, DT);
+    expect(en.stun).toBeGreaterThan(STUN_TIME - 0.1);
+    expect(sim.score).toBe(STUN_POINTS);
+    expect(stunned).toHaveBeenCalledTimes(1);
+  });
+
+  it('old clouds no longer stun', () => {
+    const { sim, en } = smoky();
+    park(sim, 13, 17);
+    sim.clouds = [{ x: 9, y: 9, age: CLOUD_STUN_AGE + 0.05 }];
+    Object.assign(en, { tx: 9, ty: 9, dx: 0, dy: 0, prog: 0 });
+    run(sim, DT);
+    expect(en.stun).toBe(0);
+  });
+
+  it('a stunned chaser is frozen and harmless, then immune for a moment', () => {
+    const { sim, en } = smoky();
+    park(sim, 13, 17);
+    en.stun = STUN_TIME;
+    place(en, 13, 17);
+    run(sim, DT * 3);
+    expect(sim.phase).toBe('play'); // touching but harmless
+    expect([en.tx, en.ty]).toEqual([13, 17]); // not moving
+    run(sim, STUN_TIME);
+    expect(en.stun).toBe(0);
+    expect(en.immune).toBeGreaterThan(0);
+  });
+
+  it('immune chasers are not stunned again straight away', () => {
+    const { sim, en } = smoky();
+    park(sim, 13, 17);
+    en.immune = 0.5;
+    sim.clouds = [{ x: 9, y: 9, age: 0 }];
+    Object.assign(en, { tx: 9, ty: 9, dx: 0, dy: 0, prog: 0 });
+    run(sim, DT);
+    expect(en.stun).toBe(0);
+  });
+
+  it('is unavailable on bonus stages', () => {
+    const { sim } = smoky();
+    sim.bonus = true;
+    park(sim, 13, 17);
+    sim.update(DT, null, true);
+    expect(sim.clouds).toHaveLength(0);
+  });
+
+  it('rocks block chasers but not the maze itself', () => {
+    const sim = new Sim();
+    expect(sim.rocks.length).toBeGreaterThan(0);
+    for (const r of sim.rocks) {
+      expect(sim.maze.isOpen(r.x, r.y)).toBe(true);
+      expect(sim.isOpenForChasers(r.x, r.y)).toBe(false);
+    }
+    sim.setRocks([]);
+    expect(sim.isOpenForChasers(13, 17)).toBe(true);
   });
 });
