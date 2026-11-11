@@ -33,6 +33,7 @@ The build output is one HTML file with all code inlined. It runs by double-click
 src/
   config/   game constants (grid size, start, homes, directions)
   core/     pure, tested logic (math, RNG, maze generation, BFS pathfinding)
+  render/   Three.js scene, maze meshes and camera rig
   i18n/     message tables (zh-TW, en) and the t() lookup
 tests/      Vitest unit tests
 ```
