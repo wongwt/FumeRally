@@ -23,6 +23,7 @@ export const zhTW = {
   'error.webgl.title': '無法啟動 WebGL',
   'error.webgl.body': '這個瀏覽器或裝置沒有開啟 WebGL，遊戲無法顯示。',
 
+  'keys.or': '或',
   'keys.drive': '駕駛',
   'keys.smoke': '放廢氣',
   'keys.pause': '暫停',

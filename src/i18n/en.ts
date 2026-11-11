@@ -24,6 +24,7 @@ export const en: Messages = {
   'error.webgl.title': 'WebGL unavailable',
   'error.webgl.body': 'This browser or device has WebGL turned off, so the game cannot be shown.',
 
+  'keys.or': 'or',
   'keys.drive': 'Drive',
   'keys.smoke': 'Exhaust',
   'keys.pause': 'Pause',

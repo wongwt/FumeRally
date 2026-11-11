@@ -24,10 +24,36 @@
         ></label>
       </div>
     </header>
-    <main class="stage" id="stage">
+    <main class="stage" id="stage" tabindex="0">
       <canvas id="gl" aria-label="Maze"></canvas>
       <div class="banner" id="banner" hidden></div>
     </main>
+    <footer class="foot">
+      <p class="keys">
+        <span>
+          <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd>
+          <span data-i18n="keys.or"></span>
+          <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>
+          <span data-i18n="keys.drive"></span>
+        </span>
+      </p>
+      <div class="touch" id="touch">
+        <div class="dpad">
+          <button type="button" class="pad up" data-dir="up" aria-label="Up">
+            <svg viewBox="0 0 24 24"><path d="M12 5l9 13H3z" fill="currentColor" /></svg>
+          </button>
+          <button type="button" class="pad left" data-dir="left" aria-label="Left">
+            <svg viewBox="0 0 24 24"><path d="M12 5l9 13H3z" fill="currentColor" /></svg>
+          </button>
+          <button type="button" class="pad right" data-dir="right" aria-label="Right">
+            <svg viewBox="0 0 24 24"><path d="M12 5l9 13H3z" fill="currentColor" /></svg>
+          </button>
+          <button type="button" class="pad down" data-dir="down" aria-label="Down">
+            <svg viewBox="0 0 24 24"><path d="M12 5l9 13H3z" fill="currentColor" /></svg>
+          </button>
+        </div>
+      </div>
+    </footer>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
