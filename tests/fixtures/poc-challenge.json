@@ -1,0 +1,28 @@
+{
+  "daily": {
+    "20260101": {
+      "date": "20260101",
+      "code": "6Z6PRC"
+    },
+    "20261112": {
+      "date": "20261112",
+      "code": "XL38QJ"
+    },
+    "20261231": {
+      "date": "20261231",
+      "code": "VVPYNT"
+    },
+    "20270228": {
+      "date": "20270228",
+      "code": "AKA9NN"
+    }
+  },
+  "norm": {
+    "rally7": "RALLY7",
+    " ab-c_d!? ": "AB-C_D",
+    "x": "X",
+    "關卡 一二三": "關卡一二三",
+    "ABCDEFGHIJKLMNOPQRSTUV": "ABCDEFGHIJKL",
+    "": ""
+  }
+}
