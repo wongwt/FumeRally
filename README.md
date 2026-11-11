@@ -31,11 +31,13 @@ The build output is one HTML file with all code inlined. It runs by double-click
 
 ```
 src/
-  core/     pure, tested helpers (math, RNG, maze, pathfinding)
+  config/   game constants (grid size, start, homes, directions)
+  core/     pure, tested logic (math, RNG, maze generation, BFS pathfinding)
+  i18n/     message tables (zh-TW, en) and the t() lookup
 tests/      Vitest unit tests
 ```
 
-More folders (sim, render, audio, input, ui, storage, i18n) are added as the milestones land.
+More folders (sim, render, audio, input, ui, storage) are added as the milestones land.
 
 ## License
 
