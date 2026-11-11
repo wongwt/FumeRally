@@ -27,3 +27,22 @@ export const DIR_LIST: readonly Vec[] = [DIRS.up, DIRS.down, DIRS.left, DIRS.rig
 
 /** Sedan speed in tiles per second; other cars override this once the garage lands. */
 export const PLAYER_SPEED = 5.3;
+
+/** Per-second fuel use of the sedan; other cars scale it. */
+export const FUEL_DRAIN = 1.15;
+export const GEM_FUEL = 9;
+export const FUEL_MAX = 100;
+/** Fuel a car restarts with after losing a life, if it had less. */
+export const RESPAWN_FUEL = 70;
+export const START_LIVES = 3;
+
+export const READY_TIME = 1.8;
+export const DYING_TIME = 1.1;
+export const CLEAR_TIME = 2.4;
+/** How long the combo multiplier survives without a new gem. */
+export const COMBO_TIME = 6;
+export const MAX_COMBO = 5;
+/** Points per gem at ×1; the combo multiplies it. */
+export const GEM_POINTS = 100;
+/** Points per remaining fuel unit on a level clear. */
+export const FUEL_BONUS = 10;
