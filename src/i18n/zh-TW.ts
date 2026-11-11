@@ -17,6 +17,12 @@ export const zhTW = {
   'hud.fuel': '燃料',
   'hud.livesAria': '剩餘 {n} 台車',
 
+  'view.scroll': '視角：追焦',
+  'view.full': '視角：全圖',
+
+  'error.webgl.title': '無法啟動 WebGL',
+  'error.webgl.body': '這個瀏覽器或裝置沒有開啟 WebGL，遊戲無法顯示。',
+
   'keys.drive': '駕駛',
   'keys.smoke': '放廢氣',
   'keys.pause': '暫停',

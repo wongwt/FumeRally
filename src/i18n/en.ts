@@ -18,6 +18,12 @@ export const en: Messages = {
   'hud.fuel': 'FUEL',
   'hud.livesAria': '{n} cars left',
 
+  'view.scroll': 'View: Follow',
+  'view.full': 'View: Full map',
+
+  'error.webgl.title': 'WebGL unavailable',
+  'error.webgl.body': 'This browser or device has WebGL turned off, so the game cannot be shown.',
+
   'keys.drive': 'Drive',
   'keys.smoke': 'Exhaust',
   'keys.pause': 'Pause',

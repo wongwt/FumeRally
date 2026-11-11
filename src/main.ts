@@ -1,48 +1,22 @@
-import { COLS, HOMES, ROWS, START } from './config/constants';
-import { buildMaze, mazeSeed } from './core/maze';
-import { Pathfinder, UNREACHED } from './core/pathfinding';
+import { START } from './config/constants';
+import { buildMaze, mazeSeed, type Maze } from './core/maze';
 import { fnv1a } from './core/rng';
 import { getLang, initLang, LANGS, onLangChange, setLang, t, type Lang, type MessageKey } from './i18n';
+import { Stage3D } from './render/stage3d';
+import type { ViewMode } from './render/cameraRig';
+import { COL } from './render/palette';
+import { wx, wz } from './render/coords';
+import { faceAngle, lerpAngle } from './core/math';
+import * as THREE from 'three';
 
-// M1 preview: a 2D look at the seeded maze generator, BFS and i18n. The 3D scene arrives in M2.
+// M2 preview: the real 3D stage (maze meshes + both cameras) with a wandering marker standing in
+// for the car so the follow camera has something to track. Driving arrives in M3.
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
-const canvas = $<HTMLCanvasElement>('preview');
-const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
-const TILE = 26;
-canvas.width = COLS * TILE;
-canvas.height = ROWS * TILE;
-const pathfinder = new Pathfinder(COLS, ROWS);
+const banner = $('banner');
 
-function draw(): void {
-  const level = Math.max(1, Math.min(99, Math.floor(Number($<HTMLInputElement>('level').value)) || 1));
-  const code = $<HTMLInputElement>('code').value.trim().toUpperCase();
-  const bonus = $<HTMLInputElement>('bonus').checked;
-  const heat = $<HTMLInputElement>('heat').checked;
-  const seed = code ? fnv1a(code) : 0;
-  const maze = buildMaze(mazeSeed(level, seed, bonus));
-  const dist = heat ? pathfinder.fill(START.x, START.y, (x, y) => maze.isOpen(x, y)) : null;
-  let far = 1;
-  if (dist) for (const d of dist) if (d < UNREACHED && d > far) far = d;
-
-  for (let y = 0; y < ROWS; y++) {
-    for (let x = 0; x < COLS; x++) {
-      const d = dist ? (dist[y * COLS + x] as number) : UNREACHED;
-      ctx.fillStyle = !maze.isOpen(x, y)
-        ? '#17394f'
-        : d < UNREACHED
-          ? `hsl(${200 - (d / far) * 160} 60% 28%)`
-          : '#123044';
-      ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
-    }
-  }
-  const mark = (x: number, y: number, color: string): void => {
-    ctx.fillStyle = color;
-    ctx.fillRect(x * TILE + 7, y * TILE + 7, TILE - 14, TILE - 14);
-  };
-  for (const h of HOMES) mark(h.x, h.y, '#ff5b4b');
-  mark(START.x, START.y, '#37c6ff');
-  $('info').textContent =
-    `seed ${mazeSeed(level, seed, bonus)} · ${maze.cells.filter((c) => c === 0).length} open tiles`;
+function showBanner(titleKey: MessageKey, bodyKey: MessageKey): void {
+  banner.innerHTML = `<div class="panel"><h2>${t(titleKey)}</h2><p>${t(bodyKey)}</p></div>`;
+  banner.hidden = false;
 }
 
 function renderText(): void {
@@ -50,29 +24,106 @@ function renderText(): void {
   for (const el of document.querySelectorAll<HTMLElement>('[data-i18n]')) {
     el.textContent = t(el.dataset.i18n as MessageKey);
   }
-  const keys: MessageKey[] = [
-    'hud.score',
-    'hud.hi',
-    'hud.level',
-    'hud.combo',
-    'hud.lives',
-    'hud.gems',
-    'hud.power',
-    'hud.time',
-    'hud.fuel'
-  ];
-  $('hud-labels').innerHTML = keys.map((k) => `<div><dt>${t(k)}</dt><dd>000000</dd></div>`).join('');
+  viewSelect.innerHTML = (['scroll', 'full'] as const)
+    .map((v) => `<option value="${v}">${t(`view.${v}`)}</option>`)
+    .join('');
+  viewSelect.value = view;
 }
 
-const select = $<HTMLSelectElement>('lang');
-select.innerHTML = LANGS.map((l) => `<option value="${l.id}">${l.label}</option>`).join('');
-select.value = initLang();
-select.addEventListener('change', () => setLang(select.value as Lang));
+const viewSelect = $<HTMLSelectElement>('view');
+let view: ViewMode = 'scroll';
+const langSelect = $<HTMLSelectElement>('lang');
+langSelect.innerHTML = LANGS.map((l) => `<option value="${l.id}">${l.label}</option>`).join('');
+langSelect.value = initLang();
+langSelect.addEventListener('change', () => setLang(langSelect.value as Lang));
 onLangChange(() => {
-  select.value = getLang();
+  langSelect.value = getLang();
   renderText();
+  if (!banner.hidden) showBanner('error.webgl.title', 'error.webgl.body');
 });
-for (const id of ['level', 'code', 'bonus', 'heat']) $(id).addEventListener('input', draw);
-
 renderText();
-draw();
+
+let stage: Stage3D | null = null;
+try {
+  stage = new Stage3D($<HTMLCanvasElement>('gl'), $('stage'));
+} catch {
+  showBanner('error.webgl.title', 'error.webgl.body');
+}
+
+if (stage) {
+  const s = stage;
+  const marker = new THREE.Mesh(
+    new THREE.BoxGeometry(0.66, 0.2, 0.38),
+    new THREE.MeshLambertMaterial({ color: COL.player })
+  );
+  marker.position.y = 0.17;
+  const markerRoot = new THREE.Group();
+  markerRoot.add(marker);
+  s.actorGroup.add(markerRoot);
+
+  // random walk over the open tiles
+  const walker = { tx: START.x, ty: START.y, dx: 0, dy: -1, prog: 0, ang: faceAngle(0, -1) };
+  let maze: Maze;
+  const SPEED = 5.3;
+
+  const loadLevel = (): void => {
+    const level = Math.max(1, Math.min(99, Math.floor(Number($<HTMLInputElement>('level').value)) || 1));
+    const code = $<HTMLInputElement>('code').value.trim().toUpperCase();
+    maze = buildMaze(mazeSeed(level, code ? fnv1a(code) : 0, $<HTMLInputElement>('bonus').checked));
+    s.setMaze(maze);
+    Object.assign(walker, { tx: START.x, ty: START.y, dx: 0, dy: -1, prog: 0 });
+    s.rig.snapTo(START.x, START.y);
+  };
+
+  const step = (dt: number): void => {
+    let dist = SPEED * dt;
+    while (dist > 1e-9) {
+      if (walker.dx === 0 && walker.dy === 0) break;
+      const remain = 1 - walker.prog;
+      if (dist < remain) {
+        walker.prog += dist;
+        break;
+      }
+      dist -= remain;
+      walker.tx += walker.dx;
+      walker.ty += walker.dy;
+      walker.prog = 0;
+      const dirs = [
+        [0, -1],
+        [0, 1],
+        [-1, 0],
+        [1, 0]
+      ] as const;
+      const open = dirs.filter(([x, y]) => maze.isOpen(walker.tx + x, walker.ty + y));
+      const ahead = open.filter(([x, y]) => !(x === -walker.dx && y === -walker.dy));
+      const pool = ahead.length ? ahead : open;
+      const [nx, ny] = pool[Math.floor(Math.random() * pool.length)] as readonly [number, number];
+      walker.dx = nx;
+      walker.dy = ny;
+    }
+  };
+
+  for (const id of ['level', 'code', 'bonus']) $(id).addEventListener('input', loadLevel);
+  viewSelect.addEventListener('change', () => {
+    view = viewSelect.value as ViewMode;
+    s.rig.setView(view);
+  });
+  // expose for automated screenshots / debugging
+  (window as unknown as { __stage: Stage3D }).__stage = s;
+  loadLevel();
+
+  let last = performance.now();
+  const frame = (now: number): void => {
+    const dt = Math.min(0.05, Math.max(0, (now - last) / 1000));
+    last = now;
+    step(dt);
+    const px = walker.tx + walker.dx * walker.prog;
+    const py = walker.ty + walker.dy * walker.prog;
+    markerRoot.position.set(wx(px), 0, wz(py));
+    walker.ang = lerpAngle(walker.ang, faceAngle(walker.dx, walker.dy), 1 - Math.exp(-16 * dt));
+    markerRoot.rotation.y = walker.ang;
+    s.render(dt, px, py);
+    requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+}
