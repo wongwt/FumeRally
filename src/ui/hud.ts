@@ -20,6 +20,7 @@ export class Hud {
     gems: $('gemsLeft'),
     power: $('power'),
     time: $('timeEl'),
+    delta: $('ghostDelta'),
     fuelFill: $('fuelFill'),
     fuelTrack: $('fuelTrack')
   };
@@ -33,6 +34,12 @@ export class Hud {
     this.set('gems', this.el.gems, String(sim.gemsLeft));
     this.set('power', this.el.power, sim.power > 0 ? sim.power.toFixed(1) + 's' : '—');
     this.set('time', this.el.time, sim.bonus ? '-' + sim.bonusT.toFixed(1) : fmtTime(sim.lvT, true));
+    const d = sim.ghostDelta;
+    const deltaText = d == null ? '' : (d <= 0 ? '' : '+') + d.toFixed(1);
+    this.set('delta', this.el.delta, deltaText, () => {
+      this.el.delta.textContent = deltaText;
+      this.el.delta.className = 'delta ' + (d != null && d <= 0 ? 'ahead' : 'behind');
+    });
     if (this.shown.get('lives') !== String(sim.lives)) {
       this.shown.set('lives', String(sim.lives));
       this.el.lives.innerHTML = carIcon.repeat(Math.max(0, sim.lives));
