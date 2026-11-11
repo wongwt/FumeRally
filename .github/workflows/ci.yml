@@ -23,6 +23,8 @@ jobs:
       - run: npm run format:check
       - run: npm test
       - run: npm run build
+      - name: Licence notices are embedded in the single file
+        run: grep -q 'three.js authors' dist/index.html && grep -q 'SIL OPEN FONT LICENSE' dist/index.html
       - uses: actions/upload-artifact@v4
         with:
           name: fume-rally-single-file
