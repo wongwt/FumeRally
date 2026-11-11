@@ -1,0 +1,41 @@
+name: Release
+
+# Push a tag like v0.1.0 to build the single-file game and attach it to a GitHub Release.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Tag matches package.json
+        run: |
+          expected="v$(node -p "require('./package.json').version")"
+          if [ "$GITHUB_REF_NAME" != "$expected" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match package.json version ($expected)"
+            exit 1
+          fi
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - name: Licence notices are embedded in the single file
+        run: grep -q 'three.js authors' dist/index.html && grep -q 'SIL OPEN FONT LICENSE' dist/index.html
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          file="fume-rally-${GITHUB_REF_NAME}.html"
+          cp dist/index.html "$file"
+          gh release create "$GITHUB_REF_NAME" "$file" THIRD_PARTY_NOTICES.md LICENSE \
+            --title "Fume Rally $GITHUB_REF_NAME" --generate-notes
