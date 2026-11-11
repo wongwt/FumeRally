@@ -447,6 +447,22 @@ describe('progress from before achievements existed', () => {
     expect(ach.count).toBe(8); // seven trophies and the garage
   });
 
+  it('saves what it granted, so it is not redone every launch', () => {
+    const storage = new MemoryStorage();
+    storage.map.set('fumeRallyRec', JSON.stringify({ carLv: 12, cleared: 12 }));
+    setup({ storage });
+    const saved = JSON.parse(storage.map.get('fumeRallyRec') as string);
+    expect(Object.keys(saved.ach).sort()).toEqual(['t10', 't3', 't5']);
+    const again = setup({ storage });
+    expect(again.ach.count).toBe(3);
+  });
+
+  it('writes nothing when there is nothing to grant', () => {
+    const storage = new MemoryStorage();
+    setup({ storage });
+    expect(storage.map.has('fumeRallyRec')).toBe(false);
+  });
+
   it('does not overwrite earlier unlock dates', () => {
     const storage = new MemoryStorage();
     storage.map.set('fumeRallyRec', JSON.stringify({ carLv: 5, cleared: 5, ach: { t3: 123 } }));

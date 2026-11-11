@@ -80,10 +80,15 @@ export class Achievements {
   private grantSilently(): void {
     const { data } = this.records;
     const now = Date.now();
-    for (const a of ACHS)
-      if (a.lvl !== undefined && data.carLv >= a.lvl && data.ach[a.id] === undefined) data.ach[a.id] = now;
-    if (unlockedCars(data.carLv).length >= CAR_ORDER.length && data.ach.garage_full === undefined)
-      data.ach.garage_full = now;
+    let changed = false;
+    const grant = (id: string): void => {
+      if (data.ach[id] !== undefined) return;
+      data.ach[id] = now;
+      changed = true;
+    };
+    for (const a of ACHS) if (a.lvl !== undefined && data.carLv >= a.lvl) grant(a.id);
+    if (unlockedCars(data.carLv).length >= CAR_ORDER.length) grant('garage_full');
+    if (changed) this.records.save();
   }
 
   private listen(): void {
