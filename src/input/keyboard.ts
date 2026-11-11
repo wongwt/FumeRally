@@ -21,6 +21,9 @@ export interface KeyActions {
   toggleView(): void;
   /** M. */
   toggleMute(): void;
+  /** A dialog is open: it takes Space / Enter / Escape and swallows everything else. */
+  modalOpen(): boolean;
+  closeModal(): void;
   /** Arrow keys on the title / game-over screens (stage picker). Return true to swallow the key. */
   menuDir(dir: DirName): boolean;
 }
@@ -33,6 +36,13 @@ function isTyping(el: EventTarget | null): boolean {
 export function bindKeyboard(input: PlayerInput, actions: KeyActions): void {
   window.addEventListener('keydown', (e) => {
     if (isTyping(e.target)) return;
+    if (actions.modalOpen()) {
+      if (e.code === 'Space' || e.code === 'Enter' || e.code === 'Escape') {
+        e.preventDefault();
+        actions.closeModal();
+      }
+      return;
+    }
     const dir = KEY_DIR[e.code];
     if (dir || e.code === 'Space') e.preventDefault();
     if (dir) {

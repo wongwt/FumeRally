@@ -9,8 +9,8 @@ export function bindTouch(
   stage: HTMLElement,
   /** Called for a tap or click on the stage (start, resume). */
   onTap: () => void,
-  /** Title / game-over screens: swiping up or down steps the start stage. */
-  menu: { active(): boolean; step(delta: 1 | -1): void },
+  /** Title / game-over screens: swiping up/down steps the start stage, left/right the car. */
+  menu: { active(): boolean; step(delta: 1 | -1): void; cycle(delta: 1 | -1): void },
   root: ParentNode = document
 ): void {
   let swipe: { x: number; y: number } | null = null;
@@ -24,9 +24,14 @@ export function bindTouch(
   });
   stage.addEventListener('pointermove', (e) => {
     if (menuSwipe) {
+      const mx = e.clientX - menuSwipe.x;
       const my = e.clientY - menuSwipe.y;
-      if (Math.abs(my) > 28 && Math.abs(my) > Math.abs(e.clientX - menuSwipe.x)) {
+      if (Math.abs(my) > 28 && Math.abs(my) > Math.abs(mx)) {
         menu.step(my < 0 ? 1 : -1);
+        menuSwipe = { x: e.clientX, y: e.clientY };
+        pressed = false;
+      } else if (Math.abs(mx) > 28 && Math.abs(mx) > Math.abs(my)) {
+        menu.cycle(mx > 0 ? 1 : -1);
         menuSwipe = { x: e.clientX, y: e.clientY };
         pressed = false;
       }

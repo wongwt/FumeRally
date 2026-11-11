@@ -21,6 +21,9 @@ export class Hud {
     power: $('power'),
     time: $('timeEl'),
     delta: $('ghostDelta'),
+    armorStat: $('armorStat'),
+    armorLabel: $('armorLabel'),
+    armor: $('armorEl'),
     fuelFill: $('fuelFill'),
     fuelTrack: $('fuelTrack')
   };
@@ -34,6 +37,23 @@ export class Hud {
     this.set('gems', this.el.gems, String(sim.gemsLeft));
     this.set('power', this.el.power, sim.power > 0 ? sim.power.toFixed(1) + 's' : '—');
     this.set('time', this.el.time, sim.bonus ? '-' + sim.bonusT.toFixed(1) : fmtTime(sim.lvT, true));
+    // armor cars show their armor pips; the police car shows whether the siren is charged
+    const kind = sim.car.armor > 0 ? 'armor' : sim.car.siren ? 'siren' : '';
+    const pips =
+      kind === 'armor'
+        ? sim.armor > 0
+          ? '●'.repeat(sim.armor)
+          : '○'
+        : kind === 'siren'
+          ? sim.sirenT > 0
+            ? '○'
+            : '●'
+          : '';
+    this.set('armorKind', this.el.armorLabel, kind, () => {
+      this.el.armorStat.hidden = !kind;
+      this.el.armorLabel.textContent = kind ? t(kind === 'armor' ? 'hud.armor' : 'hud.siren') : '';
+    });
+    this.set('armor', this.el.armor, pips);
     const d = sim.ghostDelta;
     const deltaText = d == null ? '' : (d <= 0 ? '' : '+') + d.toFixed(1);
     this.set('delta', this.el.delta, deltaText, () => {
