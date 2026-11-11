@@ -1,9 +1,32 @@
 {
   "name": "fume-rally",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
-  "description": "A retro maze-rally arcade game built with Three.js, inspired by classic arcade racers.",
+  "description": "A retro maze-rally arcade game for the browser, built with Three.js and TypeScript.",
+  "author": "Wei-Te Wong",
   "license": "MIT",
+  "homepage": "https://github.com/wongwt/FumeRally#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wongwt/FumeRally.git"
+  },
+  "bugs": {
+    "url": "https://github.com/wongwt/FumeRally/issues"
+  },
+  "keywords": [
+    "game",
+    "arcade",
+    "threejs",
+    "three.js",
+    "typescript",
+    "retro",
+    "maze",
+    "racing",
+    "browser-game"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -15,6 +38,10 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@types/three": "^0.187.0",
+    "three": "^0.187.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -28,9 +55,5 @@
     "vite": "^8.3.8",
     "vite-plugin-singlefile": "^2.3.4",
     "vitest": "^5.1.0"
-  },
-  "dependencies": {
-    "@types/three": "^0.187.0",
-    "three": "^0.187.0"
   }
 }
