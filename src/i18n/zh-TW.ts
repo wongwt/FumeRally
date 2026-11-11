@@ -56,6 +56,8 @@ export const zhTW = {
   'pause.title': '暫停',
 
   'btn.pause': '暫停',
+  'btn.mute': '靜音',
+  'btn.unmute': '音效開',
   'btn.resume': '繼續',
 
   'keys.or': '或',

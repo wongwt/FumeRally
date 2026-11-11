@@ -1,4 +1,7 @@
 import { fnv1a } from './core/rng';
+import { AudioEngine } from './audio/engine';
+import { loadMuted, saveMuted } from './audio/settings';
+import { bindSfx, Sfx } from './audio/sfx';
 import { Game } from './game/game';
 import { getLang, initLang, LANGS, onLangChange, setLang, t, type Lang, type MessageKey } from './i18n';
 import { bindKeyboard } from './input/keyboard';
@@ -14,6 +17,10 @@ const bannerEl = $('banner');
 const btnPause = $<HTMLButtonElement>('btnPause');
 const btnView = $<HTMLButtonElement>('btnView');
 const btnLang = $<HTMLButtonElement>('btnLang');
+const btnMute = $<HTMLButtonElement>('btnMute');
+
+const audio = new AudioEngine();
+audio.muted = loadMuted();
 
 let game: Game | null = null;
 let webglFailed = false;
@@ -28,6 +35,8 @@ function renderText(): void {
   btnLang.setAttribute('aria-label', t('app.language'));
   btnView.textContent = t(game?.view === 'full' ? 'view.full' : 'view.scroll');
   btnPause.textContent = t(game?.sim.phase === 'paused' ? 'btn.resume' : 'btn.pause');
+  btnMute.textContent = t(audio.muted ? 'btn.unmute' : 'btn.mute');
+  btnMute.setAttribute('aria-pressed', String(audio.muted));
   if (webglFailed) {
     bannerEl.className = 'banner card';
     bannerEl.innerHTML = `<div class="panel"><h2>${t('error.webgl.title')}</h2><p class="lead">${t('error.webgl.body')}</p></div>`;
@@ -66,10 +75,21 @@ if (stage) {
   bindKeyboard(g.input, {
     confirm: () => g.confirm(),
     pause: () => g.togglePause(),
-    toggleView: () => btnView.click()
+    toggleView: () => btnView.click(),
+    toggleMute: () => btnMute.click()
   });
+  bindSfx(g.sim.events, new Sfx(audio));
   bindTouch(g.input, $('stage'), () => void g.confirm());
 
+  // Browsers only allow audio after a user gesture, so (re)start it on every press, before other handlers run.
+  for (const type of ['pointerdown', 'keydown']) window.addEventListener(type, () => audio.ensure(), true);
+  btnMute.addEventListener('click', () => {
+    audio.ensure();
+    audio.muted = !audio.muted;
+    saveMuted(audio.muted);
+    renderText();
+    btnMute.blur();
+  });
   btnPause.addEventListener('click', () => {
     g.togglePause();
     btnPause.blur();

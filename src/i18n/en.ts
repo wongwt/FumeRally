@@ -58,6 +58,8 @@ export const en: Messages = {
   'pause.title': 'Paused',
 
   'btn.pause': 'Pause',
+  'btn.mute': 'Mute',
+  'btn.unmute': 'Sound on',
   'btn.resume': 'Resume',
 
   'keys.or': 'or',

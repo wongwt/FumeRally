@@ -19,6 +19,8 @@ export interface KeyActions {
   pause(): void;
   /** V. */
   toggleView(): void;
+  /** M. */
+  toggleMute(): void;
 }
 
 function isTyping(el: EventTarget | null): boolean {
@@ -41,6 +43,7 @@ export function bindKeyboard(input: PlayerInput, actions: KeyActions): void {
       if (!actions.confirm() && e.code === 'Space') input.setSmoke(true);
     } else if (e.code === 'KeyP' || e.code === 'Escape') actions.pause();
     else if (e.code === 'KeyV') actions.toggleView();
+    else if (e.code === 'KeyM') actions.toggleMute();
   });
   window.addEventListener('keyup', (e) => {
     const dir = KEY_DIR[e.code];
