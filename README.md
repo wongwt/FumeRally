@@ -39,6 +39,7 @@ src/
   render/   Three.js scene, maze/world meshes, effects and camera rig
   ui/       HUD, banners and floating popups
   audio/    synthesised sound effects (Web Audio, no asset files) and mute setting
+  storage/  versioned records, ghosts and preferences in localStorage
   i18n/     message tables (zh-TW, en) and the t() lookup
 tests/      Vitest unit tests
 ```
