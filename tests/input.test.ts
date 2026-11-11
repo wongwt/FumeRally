@@ -1,0 +1,55 @@
+import { describe, expect, it } from 'vitest';
+import { DIRS } from '../src/config/constants';
+import { DirectionInput } from '../src/input/directionInput';
+
+describe('DirectionInput', () => {
+  it('uses the most recently pressed key', () => {
+    const i = new DirectionInput();
+    i.press('up');
+    i.press('left');
+    i.update(0.016);
+    expect(i.want).toBe(DIRS.left);
+  });
+
+  it('falls back to the previous held key on release', () => {
+    const i = new DirectionInput();
+    i.press('up');
+    i.press('left');
+    i.release('left');
+    expect(i.want).toBe(DIRS.up);
+  });
+
+  it('remembers a tap briefly so the car turns at the next junction', () => {
+    const i = new DirectionInput();
+    i.press('right');
+    i.release('right');
+    i.update(0.3);
+    expect(i.want).toBe(DIRS.right);
+    i.update(0.2);
+    expect(i.want).toBeNull();
+  });
+
+  it('keeps a held key alive indefinitely', () => {
+    const i = new DirectionInput();
+    i.press('down');
+    for (let n = 0; n < 100; n++) i.update(0.1);
+    expect(i.want).toBe(DIRS.down);
+  });
+
+  it('swipes expire after a longer buffer', () => {
+    const i = new DirectionInput();
+    i.swipe('up');
+    i.update(0.6);
+    expect(i.want).toBe(DIRS.up);
+    i.update(0.2);
+    expect(i.want).toBeNull();
+  });
+
+  it('clear forgets held keys', () => {
+    const i = new DirectionInput();
+    i.press('up');
+    i.clear();
+    i.update(0.016);
+    expect(i.want).toBeNull();
+  });
+});
