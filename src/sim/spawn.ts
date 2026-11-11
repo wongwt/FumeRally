@@ -1,4 +1,4 @@
-import { COLS, HOMES, ROWS, START } from '../config/constants';
+import { COLS, HOMES, ROWS, START, type Vec } from '../config/constants';
 import type { Maze } from '../core/maze';
 import { Pathfinder } from '../core/pathfinding';
 import { mulberry32, shuffle } from '../core/rng';
@@ -98,4 +98,15 @@ export function spawnRocks(maze: Maze, level: number, challengeSeed: number, bon
     });
   }
   return rocks;
+}
+
+/**
+ * The order in which rainbow gems appear on a level: every cell centre, shuffled deterministically.
+ * (Unlike gems and rocks this ignores the bonus flag, as in the PoC.)
+ */
+export function specialOrder(level: number, challengeSeed: number): Vec[] {
+  const rand = mulberry32((level * 9173 + 31 + challengeSeed * 40503) >>> 0);
+  const cells: Vec[] = [];
+  for (let y = 1; y < ROWS; y += 2) for (let x = 1; x < COLS; x += 2) cells.push({ x, y });
+  return shuffle(cells, rand);
 }

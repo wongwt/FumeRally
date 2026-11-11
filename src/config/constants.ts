@@ -61,3 +61,22 @@ export const STUN_IMMUNITY = 1.0;
 export const STUN_POINTS = 50;
 /** Player and chaser collide when closer than this many tiles. */
 export const HIT_RADIUS = 0.62;
+
+/** Rainbow gem: invincibility length, first appearance, respawn delay and rewards. */
+export const POWER_TIME = 7;
+export const SPECIAL_FIRST = 4;
+export const SPECIAL_RESPAWN = 18;
+export const SPECIAL_FUEL = 25;
+export const SPECIAL_POINTS = 500;
+/** The rainbow gem never appears this close (in tiles) to the player. */
+export const SPECIAL_MIN_DISTANCE = 4;
+export const ROCK_POINTS = 20;
+export const KNOCK_POINTS = 200;
+/** A knocked-out chaser waits this long at home before it comes back. */
+export const KNOCK_RELEASE = 2.5;
+
+/** A timed bonus stage follows every third level. */
+export const BONUS_EVERY = 3;
+export const BONUS_TIME = 30;
+export const BONUS_PERFECT_POINTS = 2000;
+export const BONUS_SECOND_POINTS = 100;

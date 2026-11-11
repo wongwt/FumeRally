@@ -1,4 +1,8 @@
 import {
+  BONUS_EVERY,
+  BONUS_PERFECT_POINTS,
+  BONUS_SECOND_POINTS,
+  BONUS_TIME,
   CLEAR_TIME,
   CLOUD_LIFE,
   CLOUD_RADIUS,
@@ -11,13 +15,22 @@ import {
   GEM_FUEL,
   GEM_POINTS,
   HIT_RADIUS,
+  KNOCK_POINTS,
+  KNOCK_RELEASE,
   MAX_COMBO,
   PLAYER_SPEED,
+  POWER_TIME,
   PUFF_COOLDOWN,
   PUFF_COST,
   PUFF_DROP_DISTANCE,
   READY_TIME,
   RESPAWN_FUEL,
+  ROCK_POINTS,
+  SPECIAL_FIRST,
+  SPECIAL_FUEL,
+  SPECIAL_MIN_DISTANCE,
+  SPECIAL_POINTS,
+  SPECIAL_RESPAWN,
   START,
   START_LIVES,
   STUN_IMMUNITY,
@@ -39,10 +52,16 @@ import {
   resetEnemies
 } from './enemies';
 import { advance, choosePlayerDir, createMover, posX, posY, resetPlayer, reverseIfWanted } from './movement';
-import { type Gem, type Rock, spawnGems, spawnRocks } from './spawn';
+import { type Gem, type Rock, spawnGems, spawnRocks, specialOrder } from './spawn';
 
 export type Phase = 'title' | 'ready' | 'play' | 'dying' | 'clear' | 'over' | 'paused';
 export type CrashReason = 'fuel' | 'rock' | 'caught';
+
+/** The rainbow gem: grants a few seconds of invincibility. */
+export interface Special {
+  x: number;
+  y: number;
+}
 
 /** A puff of exhaust on the road. It stuns chasers that touch it while it is fresh. */
 export interface Cloud {
@@ -65,6 +84,11 @@ export interface SimEvents {
   enemyStunned: { enemy: Enemy; points: number; x: number; y: number };
   crash: { why: CrashReason; x: number; y: number };
   levelClear: { fuelBonus: number; time: number };
+  /** The bonus stage ended; `award` is 0 when time ran out. */
+  bonusEnd: { perfect: boolean; award: number };
+  powerUp: { x: number; y: number };
+  rockSmashed: { rock: Rock; points: number };
+  enemyKnocked: { enemy: Enemy; points: number; x: number; y: number };
   gameOver: { score: number; newRecord: boolean };
 }
 
@@ -103,6 +127,11 @@ export class Sim {
   lvDeaths = 0;
   clearedInRun = 0;
   lastFuelBonus = 0;
+  /** Which kind of stage the current 'clear' phase is celebrating. */
+  clearKind: 'level' | 'bonus' = 'level';
+  bonusT = BONUS_TIME;
+  bonusPerfect = false;
+  bonusAward = 0;
   crashWhy: CrashReason = 'rock';
   newRecord = false;
 
@@ -111,6 +140,14 @@ export class Sim {
   rocks: Rock[] = [];
   readonly enemies = createEnemies();
   clouds: Cloud[] = [];
+  /** Seconds of invincibility left. */
+  power = 0;
+  special: Special | null = null;
+  private specialT = 0;
+  private specialIdx = 0;
+  private specialCells: Vec[] = [];
+  /** Chasers knocked out during the current invincibility. */
+  knockPow = 0;
   /** Source of randomness for chaser decisions; tests replace it with a seeded one. */
   rand: () => number = Math.random;
   private smokeCd = 0;
@@ -174,6 +211,11 @@ export class Sim {
     this.setRocks(spawnRocks(this.maze, level, this.challengeSeed, bonus));
     this.gems = spawnGems(level, this.challengeSeed, bonus);
     configureEnemies(this.enemies, level, bonus);
+    this.special = null;
+    this.specialT = SPECIAL_FIRST;
+    this.specialIdx = 0;
+    this.specialCells = specialOrder(level, this.challengeSeed);
+    this.bonusT = BONUS_TIME;
     this.fuel = FUEL_MAX;
     this.lvT = 0;
     this.lvDeaths = 0;
@@ -220,7 +262,9 @@ export class Sim {
         break;
       case 'clear':
         if (this.stateT >= CLEAR_TIME) {
-          this.loadLevel(this.level + 1, false);
+          // every third level is followed by a bonus stage, which then leads to the next level
+          if (!this.bonus && this.level % BONUS_EVERY === 0) this.loadLevel(this.level, true);
+          else this.loadLevel(this.level + 1, false);
           this.setPhase('ready');
         }
         break;
@@ -241,6 +285,7 @@ export class Sim {
     resetEnemies(this.enemies);
     this.clouds = [];
     this.smokeCd = 0;
+    this.power = 0;
     this.events.emit('respawn', {});
   }
 
@@ -254,12 +299,26 @@ export class Sim {
     this.runTime += dt;
     this.lvT += dt;
 
-    this.fuel -= FUEL_DRAIN * this.drain * dt;
-    if (this.fuel <= 0) {
-      this.fuel = 0;
-      this.crash('fuel');
-      return;
+    if (this.bonus) {
+      this.bonusT -= dt;
+      if (this.bonusT <= 0) {
+        this.bonusT = 0;
+        this.endBonus(false);
+        return;
+      }
+    } else {
+      this.fuel -= FUEL_DRAIN * this.drain * dt;
+      if (this.fuel <= 0) {
+        this.fuel = 0;
+        this.crash('fuel');
+        return;
+      }
+      if (!this.special) {
+        this.specialT -= dt;
+        if (this.specialT <= 0) this.spawnSpecial();
+      }
     }
+    if (this.power > 0) this.power = Math.max(0, this.power - dt);
     if (this.mult > 1) {
       this.comboT -= dt;
       if (this.comboT <= 0) this.mult = 1;
@@ -286,23 +345,91 @@ export class Sim {
       this.comboT = COMBO_TIME;
       this.events.emit('gemTaken', { gem: g, points, mult });
     }
+    const sp = this.special;
+    if (sp && Math.abs(sp.x - px) < 0.55 && Math.abs(sp.y - py) < 0.55) this.takeSpecial(sp);
     if (this.gemsLeft === 0) {
-      this.levelClear();
+      if (this.bonus) this.endBonus(true);
+      else this.levelClear();
       return;
     }
 
     for (const r of this.rocks) {
       if (r.broken || Math.hypot(r.x - px, r.y - py) >= 0.62) continue;
-      this.crash('rock');
-      return;
+      if (this.power > 0) {
+        this.breakRock(r);
+      } else {
+        this.crash('rock');
+        return;
+      }
     }
 
     for (const en of this.enemies) {
-      if (!en.active || en.release > 0 || en.stun > 0) continue;
+      if (!en.active || en.release > 0) continue;
       if (Math.hypot(posX(en) - px, posY(en) - py) >= HIT_RADIUS) continue;
-      this.crash('caught');
+      if (this.power > 0) {
+        this.knockOut(en);
+        this.knockPow += 1;
+      } else if (en.stun <= 0) {
+        this.crash('caught');
+        return;
+      }
+    }
+  }
+
+  /** Puts the next rainbow gem on the map, skipping spots near the player or on uncollected gems. */
+  private spawnSpecial(): void {
+    const cells = this.specialCells;
+    if (this.bonus || !cells.length) return;
+    const px = Math.round(posX(this.player));
+    const py = Math.round(posY(this.player));
+    const gemSpots = new Set(this.gems.filter((g) => !g.taken).map((g) => g.x + ',' + g.y));
+    for (let k = 0; k < cells.length; k++) {
+      const c = cells[(this.specialIdx + k) % cells.length] as Vec;
+      if (gemSpots.has(c.x + ',' + c.y)) continue;
+      if (Math.abs(c.x - px) + Math.abs(c.y - py) < SPECIAL_MIN_DISTANCE) continue;
+      this.specialIdx = (this.specialIdx + k + 1) % cells.length;
+      this.special = { x: c.x, y: c.y };
       return;
     }
+  }
+
+  private takeSpecial(sp: Special): void {
+    this.special = null;
+    this.specialT = SPECIAL_RESPAWN;
+    this.power = POWER_TIME;
+    this.knockPow = 0;
+    this.fuel = Math.min(FUEL_MAX, this.fuel + SPECIAL_FUEL);
+    this.addScore(SPECIAL_POINTS);
+    this.events.emit('powerUp', { x: sp.x, y: sp.y });
+  }
+
+  /** Smashes a rock (invincible player): it disappears and stops blocking chasers. */
+  private breakRock(r: Rock): void {
+    r.broken = true;
+    this.rockGrid[r.y * COLS + r.x] = 0;
+    this.addScore(ROCK_POINTS);
+    this.events.emit('rockSmashed', { rock: r, points: ROCK_POINTS });
+  }
+
+  /** Sends a chaser back home for a while (invincible player ramming it). */
+  private knockOut(en: Enemy): void {
+    const x = posX(en);
+    const y = posY(en);
+    Object.assign(en, { tx: en.home.x, ty: en.home.y, prog: 0, dx: 0, dy: 0 });
+    en.release = KNOCK_RELEASE;
+    en.stun = 0;
+    en.immune = 0;
+    this.addScore(KNOCK_POINTS);
+    this.events.emit('enemyKnocked', { enemy: en, points: KNOCK_POINTS, x, y });
+  }
+
+  private endBonus(perfect: boolean): void {
+    this.clearKind = 'bonus';
+    this.bonusPerfect = perfect;
+    this.bonusAward = perfect ? Math.ceil(this.bonusT) * BONUS_SECOND_POINTS + BONUS_PERFECT_POINTS : 0;
+    this.addScore(this.bonusAward);
+    this.events.emit('bonusEnd', { perfect, award: this.bonusAward });
+    this.setPhase('clear');
   }
 
   private puff(): void {
@@ -374,6 +501,7 @@ export class Sim {
   }
 
   private levelClear(): void {
+    this.clearKind = 'level';
     this.lastFuelBonus = Math.round(this.fuel) * FUEL_BONUS;
     this.addScore(this.lastFuelBonus);
     this.clearedInRun += 1;
