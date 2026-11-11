@@ -35,4 +35,24 @@ describe('index.html', () => {
     expect(keys.length).toBeGreaterThan(15);
     expect(keys.filter((k) => !(k in zhTW))).toEqual([]);
   });
+
+  it('points every data-i18n-label (aria-label) at an existing message', async () => {
+    const { zhTW } = await import('../src/i18n/zh-TW');
+    const keys = [...html.matchAll(/data-i18n-label="([^"]+)"/g)].map((m) => m[1] as string);
+    expect(keys.length).toBeGreaterThanOrEqual(8);
+    expect(keys.filter((k) => !(k in zhTW))).toEqual([]);
+  });
+
+  it('gives the live regions and dialog their roles', () => {
+    expect(html).toMatch(/id="banner"[^>]*role="status"/);
+    expect(html).toMatch(/id="achToast"[^>]*role="status"/);
+    expect(html).toMatch(/id="modal"[^>]*role="dialog"[^>]*aria-modal="true"/);
+    expect(html).toMatch(/id="fuelTrack"[^>]*role="progressbar"/);
+  });
+
+  it('keeps the touch controls inside the stage so they overlay it', () => {
+    const stage = html.slice(html.indexOf('<main class="stage"'), html.indexOf('</main>'));
+    expect(stage).toContain('class="touch"');
+    expect(html.slice(html.indexOf('<footer'))).not.toContain('class="touch"');
+  });
 });

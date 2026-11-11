@@ -4,6 +4,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>廢氣拉力賽 Fume Rally</title>
+    <meta name="theme-color" content="#08141d" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2308141d'/%3E%3Crect x='4' y='13' width='24' height='9' rx='2' fill='%2337c6ff'/%3E%3Crect x='10' y='8' width='11' height='7' rx='1.5' fill='%2337c6ff'/%3E%3Ccircle cx='10' cy='23' r='3' fill='%23dcebf2'/%3E%3Ccircle cx='22' cy='23' r='3' fill='%23dcebf2'/%3E%3C/svg%3E"
+    />
     <meta name="description" content="A retro maze-rally arcade game built with Three.js." />
     <link rel="stylesheet" href="/src/style.css" />
   </head>
@@ -53,7 +58,17 @@
       </dl>
       <div class="fuel">
         <span class="fuel-label" data-i18n="hud.fuel"></span>
-        <div class="fuel-track" id="fuelTrack"><div class="fuel-fill" id="fuelFill"></div></div>
+        <div
+          class="fuel-track"
+          id="fuelTrack"
+          role="progressbar"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-valuenow="100"
+          data-i18n-label="hud.fuel"
+        >
+          <div class="fuel-fill" id="fuelFill"></div>
+        </div>
       </div>
     </header>
     <div class="debug" id="debug" hidden>
@@ -64,14 +79,31 @@
       /></label>
     </div>
     <div class="play scroll" id="play">
-      <main class="stage" id="stage" tabindex="0">
-        <canvas id="gl" aria-label="Game"></canvas>
-        <div class="banner" id="banner" hidden></div>
-        <div class="achtoast" id="achToast" hidden></div>
-        <div class="modal" id="modal" hidden></div>
+      <main class="stage" id="stage" tabindex="0" data-i18n-label="app.canvasLabel">
+        <canvas id="gl" role="img" data-i18n-label="app.canvasLabel"></canvas>
+        <div class="banner" id="banner" role="status" aria-live="polite" hidden></div>
+        <div class="touch" id="touch">
+          <div class="dpad">
+            <button type="button" class="pad up" data-dir="up" data-i18n-label="dir.up">
+              <svg viewBox="0 0 24 24"><path d="M12 5l9 13H3z" fill="currentColor" /></svg>
+            </button>
+            <button type="button" class="pad left" data-dir="left" data-i18n-label="dir.left">
+              <svg viewBox="0 0 24 24"><path d="M12 5l9 13H3z" fill="currentColor" /></svg>
+            </button>
+            <button type="button" class="pad right" data-dir="right" data-i18n-label="dir.right">
+              <svg viewBox="0 0 24 24"><path d="M12 5l9 13H3z" fill="currentColor" /></svg>
+            </button>
+            <button type="button" class="pad down" data-dir="down" data-i18n-label="dir.down">
+              <svg viewBox="0 0 24 24"><path d="M12 5l9 13H3z" fill="currentColor" /></svg>
+            </button>
+          </div>
+          <button type="button" class="smoke" id="btnSmoke" data-smoke data-i18n="btn.smoke"></button>
+        </div>
+        <div class="achtoast" id="achToast" role="status" aria-live="polite" hidden></div>
+        <div class="modal" id="modal" role="dialog" aria-modal="true" hidden></div>
       </main>
       <div class="side">
-        <aside class="radar" aria-label="Radar">
+        <aside class="radar" data-i18n-label="radar.title">
           <p class="radar-title">RADAR</p>
           <canvas id="radar"></canvas>
           <ul class="radar-key">
@@ -81,7 +113,7 @@
             <li><i style="background: #b8b0a2"></i><span data-i18n="radar.rock"></span></li>
           </ul>
         </aside>
-        <section class="challenge" id="challenge" aria-label="Challenge and leaderboard">
+        <section class="challenge" id="challenge" data-i18n-label="challenge.title">
           <div class="garage">
             <p class="radar-title">GARAGE</p>
             <div class="cars" id="cars" role="group"></div>
@@ -143,23 +175,6 @@
         <button type="button" id="btnPause"></button>
         <button type="button" id="btnMute" aria-pressed="false"></button>
         <button type="button" id="btnLang"></button>
-      </div>
-      <div class="touch" id="touch">
-        <div class="dpad">
-          <button type="button" class="pad up" data-dir="up" aria-label="Up">
-            <svg viewBox="0 0 24 24"><path d="M12 5l9 13H3z" fill="currentColor" /></svg>
-          </button>
-          <button type="button" class="pad left" data-dir="left" aria-label="Left">
-            <svg viewBox="0 0 24 24"><path d="M12 5l9 13H3z" fill="currentColor" /></svg>
-          </button>
-          <button type="button" class="pad right" data-dir="right" aria-label="Right">
-            <svg viewBox="0 0 24 24"><path d="M12 5l9 13H3z" fill="currentColor" /></svg>
-          </button>
-          <button type="button" class="pad down" data-dir="down" aria-label="Down">
-            <svg viewBox="0 0 24 24"><path d="M12 5l9 13H3z" fill="currentColor" /></svg>
-          </button>
-        </div>
-        <button type="button" class="smoke" id="btnSmoke" data-smoke data-i18n="btn.smoke"></button>
       </div>
     </footer>
     <script type="module" src="/src/main.ts"></script>

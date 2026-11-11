@@ -69,6 +69,9 @@ export class Hud {
     this.set('fuel', this.el.fuelFill, pct.toFixed(3), () => {
       this.el.fuelFill.style.transform = `scaleX(${pct.toFixed(3)})`;
     });
+    this.set('fuelNow', this.el.fuelTrack, String(Math.round(pct * 100)), () => {
+      this.el.fuelTrack.setAttribute('aria-valuenow', String(Math.round(pct * 100)));
+    });
     const cls = sim.fuel < 25 ? 'bad' : sim.fuel < 50 ? 'warn' : '';
     this.set('fuelClass', this.el.fuelTrack, cls, () => {
       this.el.fuelTrack.className = 'fuel-track' + (cls ? ' ' + cls : '');

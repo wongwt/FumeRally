@@ -87,6 +87,8 @@ export class Game {
   private codeTimer: ReturnType<typeof setTimeout> | undefined;
   private readonly stepper = new FixedStepper(STEP, 0.1);
   private shake = 0;
+  private readonly reduceMotion =
+    typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : null;
   private last = 0;
 
   constructor(
@@ -451,7 +453,12 @@ export class Game {
     this.ghostView.update(dt, sim);
     this.ui.hud.update(sim);
     if (this.shake > 0) this.shake -= dt;
-    this.stage.render(dt, posX(sim.player), posY(sim.player), Math.max(0, this.shake) * 0.5);
+    this.stage.render(
+      dt,
+      posX(sim.player),
+      posY(sim.player),
+      this.reduceMotion?.matches ? 0 : Math.max(0, this.shake) * 0.5
+    );
     if (this.view === 'scroll') this.ui.radar.draw(sim, this.stage.rig);
   }
 }

@@ -39,6 +39,7 @@ const sfx = new Sfx(audio);
 
 let game: Game | null = null;
 let webglFailed = false;
+let contextLost = false;
 
 function renderText(): void {
   document.title = `${t('app.title')} ${t('app.subtitle')}`;
@@ -46,18 +47,26 @@ function renderText(): void {
     el.textContent = t(el.dataset.i18n as MessageKey);
   }
   const other = LANGS.find((l) => l.id !== getLang());
+  // The button shows the other language's own name ("English"), so that text is its accessible name;
+  // `lang` makes screen readers pronounce it in that language.
   btnLang.textContent = other ? other.label : '';
-  btnLang.setAttribute('aria-label', t('app.language'));
+  if (other) btnLang.lang = other.id;
+  btnLang.title = t('app.language');
   btnView.textContent = t(game?.view === 'full' ? 'view.full' : 'view.scroll');
   btnPause.textContent = t(game?.sim.phase === 'paused' ? 'btn.resume' : 'btn.pause');
   btnMute.textContent = t(audio.muted ? 'btn.unmute' : 'btn.mute');
   btnMute.setAttribute('aria-pressed', String(audio.muted));
-  if (webglFailed) {
-    bannerEl.className = 'banner card';
-    bannerEl.innerHTML = `<div class="panel"><h2>${t('error.webgl.title')}</h2><p class="lead">${t('error.webgl.body')}</p></div>`;
-    bannerEl.hidden = false;
+  for (const el of document.querySelectorAll<HTMLElement>('[data-i18n-label]')) {
+    el.setAttribute('aria-label', t(el.dataset.i18nLabel as MessageKey));
   }
   game?.refreshText();
+  // error messages go last so the game's own screens do not paint over them
+  if (webglFailed || contextLost) {
+    const kind = webglFailed ? 'webgl' : 'contextLost';
+    bannerEl.className = 'banner card';
+    bannerEl.innerHTML = `<div class="panel"><h2>${t(`error.${kind}.title`)}</h2><p class="lead">${t(`error.${kind}.body`)}</p></div>`;
+    bannerEl.hidden = false;
+  }
 }
 
 initLang();
@@ -104,6 +113,7 @@ if (stage) {
       onUnlockShown: () => sfx.clear(),
       onPhase: (sim) => {
         btnPause.textContent = t(sim.phase === 'paused' ? 'btn.resume' : 'btn.pause');
+        playEl.classList.toggle('menu', sim.wantsStart); // touch pad only while a game is on
         if (!sim.wantsStart) playEl.classList.remove('drawer'); // close the mobile challenge drawer once a game starts
       },
       onInvalidStart: () => {
@@ -117,6 +127,18 @@ if (stage) {
   g.setView(prefs.view);
   playEl.classList.toggle('scroll', g.view === 'scroll');
   g.init();
+
+  // The browser may take the GPU away (memory pressure, driver reset): pause, say so, and carry on when it returns.
+  s.element.addEventListener('webglcontextlost', (e) => {
+    e.preventDefault();
+    contextLost = true;
+    if (g.sim.phase === 'play' || g.sim.phase === 'ready') g.togglePause();
+    renderText();
+  });
+  s.element.addEventListener('webglcontextrestored', () => {
+    contextLost = false;
+    renderText();
+  });
   bindKeyboard(g.input, {
     confirm: () => g.confirm(),
     pause: () => g.togglePause(),

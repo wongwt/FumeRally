@@ -1,3 +1,12 @@
+/* Press Start 2P (SIL OFL), bundled so the game needs no network. See src/assets/fonts/OFL.txt */
+@font-face {
+  font-family: 'Press Start 2P';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./assets/fonts/press-start-2p-latin-400.woff2') format('woff2');
+}
+
 :root {
   --bg: #08141d;
   --panel: #0e2230;
@@ -12,7 +21,7 @@
   --bad: #ff5b4b;
   --scrim: rgba(8, 20, 29, 0.84);
   --font-ui: system-ui, -apple-system, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif;
-  --font-pixel: ui-monospace, Menlo, Consolas, monospace;
+  --font-pixel: 'Press Start 2P', ui-monospace, Menlo, Consolas, monospace;
   color-scheme: dark;
 }
 * {
@@ -21,13 +30,17 @@
 html,
 body {
   height: 100%;
+  overscroll-behavior: none;
 }
 body {
   margin: 0;
   background: var(--bg);
   color: var(--fg);
   font: 14px/1.5 var(--font-ui);
-  padding-block: 10px;
+  height: 100dvh;
+  padding-top: max(10px, env(safe-area-inset-top, 0px));
+  padding-bottom: max(10px, env(safe-area-inset-bottom, 0px));
+  -webkit-tap-highlight-color: transparent;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
   display: flex;
@@ -162,72 +175,6 @@ button:focus-visible {
   outline: 2px solid var(--player);
   outline-offset: 2px;
 }
-.touch {
-  display: none;
-  width: 100%;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-}
-.dpad {
-  display: grid;
-  grid-template-columns: repeat(3, 54px);
-  grid-template-rows: repeat(3, 54px);
-  gap: 4px;
-}
-.pad {
-  padding: 0;
-  display: grid;
-  place-items: center;
-  touch-action: none;
-}
-.pad svg {
-  width: 22px;
-  height: 22px;
-}
-.pad.up {
-  grid-area: 1 / 2;
-}
-.pad.left {
-  grid-area: 2 / 1;
-}
-.pad.right {
-  grid-area: 2 / 3;
-}
-.pad.down {
-  grid-area: 3 / 2;
-}
-.pad.left svg {
-  transform: rotate(-90deg);
-}
-.pad.right svg {
-  transform: rotate(90deg);
-}
-.pad.down svg {
-  transform: rotate(180deg);
-}
-.smoke {
-  width: 92px;
-  height: 92px;
-  border-radius: 50%;
-  font-size: 15px;
-  touch-action: none;
-  border-color: var(--enemy);
-}
-.pad.active,
-.smoke.active {
-  background: var(--line);
-  border-color: var(--player);
-}
-@media (hover: none) and (pointer: coarse) {
-  .touch {
-    display: flex;
-  }
-  .keys {
-    display: none;
-  }
-}
-
 [hidden] {
   display: none !important;
 }
@@ -943,4 +890,153 @@ button:disabled {
 }
 .ach.done {
   border-color: #4a5a3a;
+}
+
+/* ---------- Touch controls: drawn over the stage so they cost no screen height ---------- */
+button {
+  touch-action: manipulation;
+}
+.touch {
+  display: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  padding: 8px;
+  justify-content: space-between;
+  align-items: flex-end;
+  pointer-events: none;
+  -webkit-touch-callout: none;
+}
+.touch > * {
+  pointer-events: auto;
+}
+.dpad {
+  --pad: clamp(42px, 13vmin, 56px);
+  display: grid;
+  grid-template-columns: repeat(3, var(--pad));
+  grid-template-rows: repeat(3, var(--pad));
+  gap: 4px;
+}
+.pad {
+  padding: 0;
+  display: grid;
+  place-items: center;
+  touch-action: none;
+  background: rgba(14, 34, 48, 0.62);
+}
+.pad svg {
+  width: 40%;
+  height: 40%;
+}
+.pad.up {
+  grid-area: 1 / 2;
+}
+.pad.left {
+  grid-area: 2 / 1;
+}
+.pad.right {
+  grid-area: 2 / 3;
+}
+.pad.down {
+  grid-area: 3 / 2;
+}
+.pad.left svg {
+  transform: rotate(-90deg);
+}
+.pad.right svg {
+  transform: rotate(90deg);
+}
+.pad.down svg {
+  transform: rotate(180deg);
+}
+.smoke {
+  width: clamp(64px, 19vmin, 88px);
+  height: clamp(64px, 19vmin, 88px);
+  border-radius: 50%;
+  font-size: 14px;
+  touch-action: none;
+  border-color: var(--enemy);
+  background: rgba(14, 34, 48, 0.62);
+}
+.pad.active,
+.smoke.active {
+  background: var(--line);
+  border-color: var(--player);
+}
+@media (hover: none) and (pointer: coarse) {
+  .touch {
+    display: flex;
+  }
+  .keys {
+    display: none;
+  }
+  .tools button,
+  .seg button,
+  .coderow button,
+  .start-btn {
+    min-height: 40px;
+  }
+}
+/* on the title and game-over screens a tap starts the game and swipes pick stage/car, so no pad */
+.play.menu .touch {
+  display: none;
+}
+.stage:focus-visible {
+  border-color: var(--player);
+}
+
+/* ---------- Small screens ---------- */
+@media (max-width: 520px) {
+  .hud {
+    gap: 6px 12px;
+  }
+  .brand {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .fuel {
+    flex: 1 1 110px;
+    max-width: none;
+    margin-left: 0;
+  }
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px 8px;
+    width: 100%;
+  }
+  .stat dd {
+    font-size: 11px;
+  }
+  .tools {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .tools button {
+    padding: 8px 10px;
+  }
+}
+@media (max-width: 720px) {
+  .banner .intro,
+  .banner .legend li:nth-child(n + 3) {
+    display: none;
+  }
+}
+/* short screens (phones in landscape): keep the cards small enough to fit */
+@media (max-height: 520px) {
+  .panel {
+    padding: 10px 16px;
+    gap: 6px;
+  }
+  .panel h2 {
+    font-size: 22px;
+  }
+  .banner .intro,
+  .banner .legend,
+  .banner .records {
+    display: none;
+  }
 }
