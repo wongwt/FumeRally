@@ -59,33 +59,42 @@ export function bindTouch(
     });
   }
 
+  // long-press on the stage must not open the browser's context menu mid-game
+  stage.addEventListener('contextmenu', (e) => e.preventDefault());
+
   root.querySelectorAll<HTMLElement>('[data-dir]').forEach((btn) => {
     const name = btn.dataset.dir as DirName;
     btn.addEventListener('pointerdown', (e) => {
       e.preventDefault();
+      e.stopPropagation(); // the buttons sit over the stage: do not also start a tap or swipe there
       input.press(name);
       btn.classList.add('active');
     });
     for (const type of ['pointerup', 'pointercancel', 'pointerleave']) {
-      btn.addEventListener(type, () => {
+      btn.addEventListener(type, (e) => {
+        e.stopPropagation();
         input.release(name);
         btn.classList.remove('active');
       });
     }
+    btn.addEventListener('contextmenu', (e) => e.preventDefault());
   });
 
   const smokeBtn = root.querySelector<HTMLElement>('[data-smoke]');
   if (smokeBtn) {
     smokeBtn.addEventListener('pointerdown', (e) => {
       e.preventDefault();
+      e.stopPropagation();
       input.setSmoke(true);
       smokeBtn.classList.add('active');
     });
     for (const type of ['pointerup', 'pointercancel', 'pointerleave']) {
-      smokeBtn.addEventListener(type, () => {
+      smokeBtn.addEventListener(type, (e) => {
+        e.stopPropagation();
         input.setSmoke(false);
         smokeBtn.classList.remove('active');
       });
     }
+    smokeBtn.addEventListener('contextmenu', (e) => e.preventDefault());
   }
 }
