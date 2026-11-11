@@ -2,6 +2,7 @@
 export const zhTW = {
   'app.title': '廢氣拉力賽',
   'app.subtitle': 'FUME RALLY',
+  'app.docTitle': '廢氣拉力賽 Fume Rally',
   'app.language': '語言',
 
   'hud.score': '分數',

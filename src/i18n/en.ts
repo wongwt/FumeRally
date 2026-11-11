@@ -2,7 +2,8 @@ import type { Messages } from './zh-TW';
 
 export const en: Messages = {
   'app.title': 'Fume Rally',
-  'app.subtitle': 'FUME RALLY',
+  'app.subtitle': 'RETRO MAZE RALLY',
+  'app.docTitle': 'Fume Rally · retro maze rally',
   'app.language': 'Language',
 
   'hud.score': 'SCORE',

@@ -42,7 +42,7 @@ let webglFailed = false;
 let contextLost = false;
 
 function renderText(): void {
-  document.title = `${t('app.title')} ${t('app.subtitle')}`;
+  document.title = t('app.docTitle');
   for (const el of document.querySelectorAll<HTMLElement>('[data-i18n]')) {
     el.textContent = t(el.dataset.i18n as MessageKey);
   }
