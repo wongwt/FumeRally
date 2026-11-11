@@ -9,16 +9,29 @@ export function bindTouch(
   stage: HTMLElement,
   /** Called for a tap or click on the stage (start, resume). */
   onTap: () => void,
+  /** Title / game-over screens: swiping up or down steps the start stage. */
+  menu: { active(): boolean; step(delta: 1 | -1): void },
   root: ParentNode = document
 ): void {
   let swipe: { x: number; y: number } | null = null;
+  let menuSwipe: { x: number; y: number } | null = null;
   let pressed = false;
   stage.addEventListener('pointerdown', (e) => {
     stage.focus({ preventScroll: true });
     pressed = true;
+    menuSwipe = menu.active() ? { x: e.clientX, y: e.clientY } : null;
     if (e.pointerType === 'touch') swipe = { x: e.clientX, y: e.clientY };
   });
   stage.addEventListener('pointermove', (e) => {
+    if (menuSwipe) {
+      const my = e.clientY - menuSwipe.y;
+      if (Math.abs(my) > 28 && Math.abs(my) > Math.abs(e.clientX - menuSwipe.x)) {
+        menu.step(my < 0 ? 1 : -1);
+        menuSwipe = { x: e.clientX, y: e.clientY };
+        pressed = false;
+      }
+      return;
+    }
     if (!swipe) return;
     const dx = e.clientX - swipe.x;
     const dy = e.clientY - swipe.y;
@@ -31,11 +44,13 @@ export function bindTouch(
     if (pressed) onTap();
     pressed = false;
     swipe = null;
+    menuSwipe = null;
   });
   for (const type of ['pointercancel', 'pointerleave']) {
     stage.addEventListener(type, () => {
       pressed = false;
       swipe = null;
+      menuSwipe = null;
     });
   }
 

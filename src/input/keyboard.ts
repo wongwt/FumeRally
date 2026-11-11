@@ -21,6 +21,8 @@ export interface KeyActions {
   toggleView(): void;
   /** M. */
   toggleMute(): void;
+  /** Arrow keys on the title / game-over screens (stage picker). Return true to swallow the key. */
+  menuDir(dir: DirName): boolean;
 }
 
 function isTyping(el: EventTarget | null): boolean {
@@ -34,7 +36,8 @@ export function bindKeyboard(input: PlayerInput, actions: KeyActions): void {
     const dir = KEY_DIR[e.code];
     if (dir || e.code === 'Space') e.preventDefault();
     if (dir) {
-      if (!e.repeat) input.press(dir);
+      if (e.repeat) return;
+      if (!actions.menuDir(dir)) input.press(dir);
       return;
     }
     if (e.repeat) return;
