@@ -23,6 +23,7 @@ const btnPause = $<HTMLButtonElement>('btnPause');
 const btnView = $<HTMLButtonElement>('btnView');
 const btnLang = $<HTMLButtonElement>('btnLang');
 const btnMute = $<HTMLButtonElement>('btnMute');
+const btnAch = $<HTMLButtonElement>('btnAch');
 
 const storage = browserStorage();
 const records = new Records(storage);
@@ -94,6 +95,12 @@ if (stage) {
       panel,
       garage: new Garage($('cars'), (id) => game?.selectCar(id)),
       modalEl: $('modal'),
+      achToastEl: $('achToast'),
+      onAchChange: ({ count, total, latest }) => {
+        $('achCount').textContent = `${count} / ${total}`;
+        $('achLatest').textContent = latest ? t('ach.latest', { name: latest }) : t('ach.none');
+        btnAch.textContent = t('btn.achievements', { n: count, total });
+      },
       onUnlockShown: () => sfx.clear(),
       onPhase: (sim) => {
         btnPause.textContent = t(sim.phase === 'paused' ? 'btn.resume' : 'btn.pause');
@@ -147,6 +154,13 @@ if (stage) {
     btnView.textContent = t(g.view === 'full' ? 'view.full' : 'view.scroll');
     btnView.blur();
   });
+  for (const b of [btnAch, $('btnAchPanel')]) {
+    b.addEventListener('click', () => {
+      audio.ensure();
+      g.openAchievements();
+      b.blur();
+    });
+  }
   $('btnChal').addEventListener('click', () => {
     playEl.classList.toggle('drawer');
     $('btnChal').blur();

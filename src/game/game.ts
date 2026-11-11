@@ -15,6 +15,7 @@ import { WorldView } from '../render/worldView';
 import { posX, posY } from '../sim/movement';
 import { Sim } from '../sim/sim';
 import { ChallengeState } from './challenge';
+import { Achievements } from './achievements';
 import { Progress } from './progress';
 import { FixedStepper } from '../sim/stepper';
 import { t } from '../i18n';
@@ -25,6 +26,7 @@ import { Banner, type ScreenContext } from '../ui/banner';
 import type { Garage } from '../ui/garage';
 import { Modal } from '../ui/modal';
 import { unlockModalHtml } from '../ui/unlockModal';
+import { achPanelHtml, achToastHtml, ToastQueue } from '../ui/achievementsUi';
 import type { ChallengePanel, PanelModel } from '../ui/challengePanel';
 import type { Hud } from '../ui/hud';
 import type { Popups } from '../ui/popups';
@@ -50,6 +52,10 @@ export interface GameUi {
   garage: Garage;
   /** Element the dialogs (new car) are drawn into. */
   modalEl: HTMLElement;
+  /** The achievement unlock pop-up. */
+  achToastEl: HTMLElement;
+  /** Achievement count or latest unlock changed (update the buttons). */
+  onAchChange?: (info: { count: number; total: number; latest: string | null }) => void;
   /** The new-car dialog just opened (play a jingle). */
   onUnlockShown?: () => void;
   /** Called whenever the phase may have changed (to relabel buttons, close the mobile drawer). */
@@ -66,6 +72,8 @@ export class Game {
   readonly sim = new Sim();
   readonly input = new PlayerInput();
   readonly progress: Progress;
+  readonly achievements: Achievements;
+  private readonly toasts: ToastQueue;
   readonly challenge: ChallengeState;
   private readonly banner: Banner;
   readonly modal: Modal;
@@ -87,6 +95,20 @@ export class Game {
     private readonly services: GameServices
   ) {
     this.progress = new Progress(this.sim, services.records, services.ghosts);
+    this.achievements = new Achievements(this.sim, this.progress, services.records);
+    this.toasts = new ToastQueue(
+      (id) => {
+        ui.achToastEl.innerHTML = achToastHtml(id);
+        ui.achToastEl.hidden = false;
+      },
+      () => {
+        ui.achToastEl.hidden = true;
+      }
+    );
+    this.achievements.events.on('unlocked', ({ id }) => {
+      this.toasts.push(id);
+      this.announceAchievements();
+    });
     this.challenge = new ChallengeState(services.prefs);
     this.banner = new Banner(ui.bannerEl, () => this.screenContext());
     this.modal = new Modal(ui.modalEl);
@@ -105,6 +127,7 @@ export class Game {
 
   /** Applies the saved challenge and draws the first screen. Call once after construction. */
   init(): void {
+    this.announceAchievements();
     const saved = this.services.prefs.car;
     this.applyCar(isCarId(saved) && carUnlocked(saved, this.services.records.data.carLv) ? saved : 'sedan');
     this.applyChallenge();
@@ -283,6 +306,24 @@ export class Game {
     };
   }
 
+  /** Tells the UI the achievement count / latest unlock (for the button and the side box). */
+  announceAchievements(): void {
+    const a = this.achievements;
+    this.ui.onAchChange?.({
+      count: a.count,
+      total: a.total,
+      latest: a.latest ? t(`ach.${a.latest}.name`) : null
+    });
+  }
+
+  /** Opens the achievements dialog, pausing a running game first. */
+  openAchievements(): void {
+    if (this.modal.isOpen) return;
+    if (this.sim.phase === 'play' || this.sim.phase === 'ready') this.sim.togglePause();
+    this.input.clear();
+    this.modal.show(achPanelHtml(this.achievements));
+  }
+
   togglePause(): void {
     this.sim.togglePause();
   }
@@ -293,6 +334,7 @@ export class Game {
 
   /** Re-renders text that depends on the language. */
   refreshText(): void {
+    this.announceAchievements();
     this.ui.hud.invalidate();
     this.refreshScreens();
   }
