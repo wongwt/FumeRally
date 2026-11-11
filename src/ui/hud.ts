@@ -18,6 +18,7 @@ export class Hud {
     combo: $('combo'),
     lives: $('lives'),
     gems: $('gemsLeft'),
+    power: $('power'),
     time: $('timeEl'),
     fuelFill: $('fuelFill'),
     fuelTrack: $('fuelTrack')
@@ -30,7 +31,8 @@ export class Hud {
     this.set('level', this.el.level, sim.bonus ? 'BONUS' : String(sim.level));
     this.set('combo', this.el.combo, '×' + sim.mult);
     this.set('gems', this.el.gems, String(sim.gemsLeft));
-    this.set('time', this.el.time, fmtTime(sim.lvT, true));
+    this.set('power', this.el.power, sim.power > 0 ? sim.power.toFixed(1) + 's' : '—');
+    this.set('time', this.el.time, sim.bonus ? '-' + sim.bonusT.toFixed(1) : fmtTime(sim.lvT, true));
     if (this.shown.get('lives') !== String(sim.lives)) {
       this.shown.set('lives', String(sim.lives));
       this.el.lives.innerHTML = carIcon.repeat(Math.max(0, sim.lives));

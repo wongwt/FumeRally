@@ -1,5 +1,6 @@
 import { fmtTime } from '../core/format';
 import { pad6 } from '../core/math';
+import { POWER_TIME } from '../config/constants';
 import { t } from '../i18n';
 import type { Sim } from '../sim/sim';
 
@@ -29,7 +30,12 @@ export class Banner {
         this.show(titleHtml(), 'card');
         break;
       case 'ready':
-        this.show(`<p class="eyebrow">STAGE ${sim.level}</p><p class="big">${t('ready.go')}</p>`, 'toast');
+        this.show(
+          sim.bonus
+            ? `<p class="eyebrow">BONUS STAGE</p><p class="big">${t('ready.bonusTitle')}</p><p class="lead">${t('ready.bonusLead')}</p>`
+            : `<p class="eyebrow">STAGE ${sim.level}</p><p class="big">${t('ready.go')}</p>`,
+          'toast'
+        );
         break;
       case 'play':
         this.hide();
@@ -44,12 +50,7 @@ export class Banner {
         this.show(`<p class="big">${t(`crash.${sim.crashWhy}`)}</p>`, 'toast');
         break;
       case 'clear':
-        this.show(
-          `<p class="eyebrow">STAGE ${sim.level} CLEAR</p><p class="big">${t('clear.title')}</p>` +
-            `<p class="score-line">${t('clear.fuelBonus', { n: sim.lastFuelBonus })}</p>` +
-            `<p class="lead">${t('clear.time', { t: fmtTime(sim.lvT, true) })}</p>`,
-          'toast'
-        );
+        this.show(sim.clearKind === 'bonus' ? bonusClearHtml(sim) : levelClearHtml(sim), 'toast');
         break;
       case 'over':
         this.show(
@@ -65,12 +66,28 @@ export class Banner {
   }
 }
 
+function levelClearHtml(sim: Sim): string {
+  return (
+    `<p class="eyebrow">STAGE ${sim.level} CLEAR</p><p class="big">${t('clear.title')}</p>` +
+    `<p class="score-line">${t('clear.fuelBonus', { n: sim.lastFuelBonus })}</p>` +
+    `<p class="lead">${t('clear.time', { t: fmtTime(sim.lvT, true) })}</p>`
+  );
+}
+
+function bonusClearHtml(sim: Sim): string {
+  return (
+    `<p class="eyebrow">BONUS STAGE</p><p class="big">${t(sim.bonusPerfect ? 'bonus.perfect' : 'bonus.timeUp')}</p>` +
+    `<p class="score-line">${sim.bonusAward ? t('bonus.award', { n: sim.bonusAward }) : t('bonus.again')}</p>`
+  );
+}
+
 function titleHtml(): string {
   return (
     `<p class="eyebrow">${t('app.subtitle')}</p><h2>${t('app.title')}</h2>` +
     `<p class="lead">${t('title.lead')}</p>` +
     `<ul class="legend"><li>${kbd('↑', '↓', '←', '→')} ${t('keys.or')} ${kbd('W', 'A', 'S', 'D')} ${t('title.drive')}</li>` +
-    `<li>${spaceKey()} ${t('title.smoke')}&emsp;${kbd('V')} ${t('keys.view')}</li></ul>` +
+    `<li>${spaceKey()} ${t('title.smoke')}&emsp;${kbd('V')} ${t('keys.view')}</li>` +
+    `<li>${t('title.power', { n: POWER_TIME })}</li></ul>` +
     `<p class="cta">${t('cta.start', { key: spaceKey() })}</p>`
   );
 }
