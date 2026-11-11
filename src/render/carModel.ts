@@ -13,6 +13,8 @@ const shadowMat = new THREE.MeshBasicMaterial({
   opacity: 0.35,
   depthWrite: false
 });
+const starGeo = new THREE.SphereGeometry(0.05, 8, 6);
+const starMat = new THREE.MeshBasicMaterial({ color: COL.gem });
 const stripeMat = new THREE.MeshBasicMaterial({ color: 0xf2fbff });
 
 export interface CarModel {
@@ -20,6 +22,8 @@ export interface CarModel {
   group: THREE.Group;
   /** Body paint; tint it for effects like invincibility or stun. */
   bodyMat: THREE.MeshLambertMaterial;
+  /** Three gold stars that circle above a stunned car; hidden by default. */
+  stars: THREE.Group;
 }
 
 /** Builds the sedan: the base body style that other cars will vary (body, cabin, wheels, lamps). */
@@ -64,5 +68,15 @@ export function makeSedan(color: number, withStripe: boolean): CarModel {
   shadow.position.y = 0.012;
   shadow.scale.set(1.5, 1, 1.05);
   group.add(shadow);
-  return { group, bodyMat };
+  const stars = new THREE.Group();
+  for (let i = 0; i < 3; i++) {
+    const star = new THREE.Mesh(starGeo, starMat);
+    const a = (i / 3) * Math.PI * 2;
+    star.position.set(Math.cos(a) * 0.24, 0, Math.sin(a) * 0.24);
+    stars.add(star);
+  }
+  stars.position.y = 0.66;
+  stars.visible = false;
+  group.add(stars);
+  return { group, bodyMat, stars };
 }
