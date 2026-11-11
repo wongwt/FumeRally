@@ -24,10 +24,12 @@ export interface CarModel {
   bodyMat: THREE.MeshLambertMaterial;
   /** Three gold stars that circle above a stunned car; hidden by default. */
   stars: THREE.Group;
+  /** Translucent sphere shown around the player while invincible (only if requested). */
+  aura?: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>;
 }
 
 /** Builds the sedan: the base body style that other cars will vary (body, cabin, wheels, lamps). */
-export function makeSedan(color: number, withStripe: boolean): CarModel {
+export function makeSedan(color: number, withStripe: boolean, withAura = false): CarModel {
   const group = new THREE.Group();
   const bodyMat = new THREE.MeshLambertMaterial({ color });
   const bl = 0.66; // body length
@@ -78,5 +80,16 @@ export function makeSedan(color: number, withStripe: boolean): CarModel {
   stars.position.y = 0.66;
   stars.visible = false;
   group.add(stars);
-  return { group, bodyMat, stars };
+  const car: CarModel = { group, bodyMat, stars };
+  if (withAura) {
+    const aura = new THREE.Mesh(
+      new THREE.SphereGeometry(0.5, 16, 12),
+      new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.22, depthWrite: false })
+    );
+    aura.position.y = 0.25;
+    aura.visible = false;
+    group.add(aura);
+    car.aura = aura;
+  }
+  return car;
 }
