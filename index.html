@@ -9,8 +9,25 @@
   </head>
   <body>
     <main class="boot">
-      <h1 class="brand"><span class="brand-zh">廢氣拉力賽</span><span class="brand-en">FUME RALLY</span></h1>
-      <canvas id="gl" aria-label="Scaffold preview"></canvas>
+      <h1 class="brand">
+        <span class="brand-zh" data-i18n="app.title"></span>
+        <span class="brand-en" data-i18n="app.subtitle"></span>
+      </h1>
+      <section class="lab" aria-label="Maze preview">
+        <div class="lab-bar">
+          <label>Level <input id="level" type="number" min="1" max="99" value="1" /></label>
+          <label>Code <input id="code" type="text" maxlength="12" placeholder="RALLY7" /></label>
+          <label class="check"><input id="bonus" type="checkbox" /> Bonus</label>
+          <label class="check"><input id="heat" type="checkbox" /> Distance from start</label>
+          <label
+            ><span data-i18n="app.language"></span>
+            <select id="lang"></select
+          ></label>
+        </div>
+        <canvas id="preview" aria-label="Maze preview"></canvas>
+        <p id="info" class="note"></p>
+        <dl id="hud-labels" class="labels"></dl>
+      </section>
       <p class="note">Scaffold build · the game is coming together milestone by milestone.</p>
     </main>
     <script type="module" src="/src/main.ts"></script>

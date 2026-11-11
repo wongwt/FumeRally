@@ -61,3 +61,65 @@ body {
   margin: 0;
   color: var(--dim);
 }
+.lab {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+}
+.lab-bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 16px;
+  color: var(--dim);
+}
+.lab-bar input[type='number'],
+.lab-bar input[type='text'],
+.lab-bar select {
+  font: inherit;
+  color: var(--fg);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 4px 6px;
+}
+.lab-bar input[type='number'] {
+  width: 4.5em;
+}
+.lab-bar input[type='text'] {
+  width: 8em;
+  text-transform: uppercase;
+}
+.check {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+#preview {
+  width: min(702px, 92vw);
+  aspect-ratio: 27 / 19;
+  image-rendering: pixelated;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.labels {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 20px;
+  margin: 0;
+}
+.labels div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.labels dt {
+  font-size: 11px;
+  color: var(--dim);
+  letter-spacing: 0.14em;
+}
+.labels dd {
+  margin: 0;
+  font: 12px/1 var(--font-pixel);
+}

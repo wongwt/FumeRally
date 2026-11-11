@@ -1,36 +1,78 @@
-import * as THREE from 'three';
+import { COLS, HOMES, ROWS, START } from './config/constants';
+import { buildMaze, mazeSeed } from './core/maze';
+import { Pathfinder, UNREACHED } from './core/pathfinding';
+import { fnv1a } from './core/rng';
+import { getLang, initLang, LANGS, onLangChange, setLang, t, type Lang, type MessageKey } from './i18n';
 
-// M0 scaffold: proves that three.js bundles into the single-file build.
-// A spinning gem in the PoC's palette; replaced by the real game in later milestones.
-const canvas = document.getElementById('gl') as HTMLCanvasElement;
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-renderer.setClearColor(0x08141d);
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 50);
-camera.position.set(0, 1.2, 4);
-camera.lookAt(0, 0, 0);
-scene.add(new THREE.AmbientLight(0xcfe6ff, 0.72));
-const sun = new THREE.DirectionalLight(0xffffff, 0.85);
-sun.position.set(-8, 16, 10);
-scene.add(sun);
-const gem = new THREE.Mesh(
-  new THREE.OctahedronGeometry(0.7, 0).scale(1, 1.4, 1),
-  new THREE.MeshLambertMaterial({ color: 0xffc83d, emissive: 0x6b4a00 })
-);
-scene.add(gem);
+// M1 preview: a 2D look at the seeded maze generator, BFS and i18n. The 3D scene arrives in M2.
+const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
+const canvas = $<HTMLCanvasElement>('preview');
+const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
+const TILE = 26;
+canvas.width = COLS * TILE;
+canvas.height = ROWS * TILE;
+const pathfinder = new Pathfinder(COLS, ROWS);
 
-function resize(): void {
-  const w = canvas.clientWidth;
-  const h = canvas.clientHeight;
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  renderer.setSize(w, h, false);
-  camera.aspect = w / h;
-  camera.updateProjectionMatrix();
+function draw(): void {
+  const level = Math.max(1, Math.min(99, Math.floor(Number($<HTMLInputElement>('level').value)) || 1));
+  const code = $<HTMLInputElement>('code').value.trim().toUpperCase();
+  const bonus = $<HTMLInputElement>('bonus').checked;
+  const heat = $<HTMLInputElement>('heat').checked;
+  const seed = code ? fnv1a(code) : 0;
+  const maze = buildMaze(mazeSeed(level, seed, bonus));
+  const dist = heat ? pathfinder.fill(START.x, START.y, (x, y) => maze.isOpen(x, y)) : null;
+  let far = 1;
+  if (dist) for (const d of dist) if (d < UNREACHED && d > far) far = d;
+
+  for (let y = 0; y < ROWS; y++) {
+    for (let x = 0; x < COLS; x++) {
+      const d = dist ? (dist[y * COLS + x] as number) : UNREACHED;
+      ctx.fillStyle = !maze.isOpen(x, y)
+        ? '#17394f'
+        : d < UNREACHED
+          ? `hsl(${200 - (d / far) * 160} 60% 28%)`
+          : '#123044';
+      ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
+    }
+  }
+  const mark = (x: number, y: number, color: string): void => {
+    ctx.fillStyle = color;
+    ctx.fillRect(x * TILE + 7, y * TILE + 7, TILE - 14, TILE - 14);
+  };
+  for (const h of HOMES) mark(h.x, h.y, '#ff5b4b');
+  mark(START.x, START.y, '#37c6ff');
+  $('info').textContent =
+    `seed ${mazeSeed(level, seed, bonus)} · ${maze.cells.filter((c) => c === 0).length} open tiles`;
 }
-window.addEventListener('resize', resize);
-resize();
 
-renderer.setAnimationLoop((t) => {
-  gem.rotation.y = t / 450;
-  renderer.render(scene, camera);
+function renderText(): void {
+  document.title = `${t('app.title')} ${t('app.subtitle')}`;
+  for (const el of document.querySelectorAll<HTMLElement>('[data-i18n]')) {
+    el.textContent = t(el.dataset.i18n as MessageKey);
+  }
+  const keys: MessageKey[] = [
+    'hud.score',
+    'hud.hi',
+    'hud.level',
+    'hud.combo',
+    'hud.lives',
+    'hud.gems',
+    'hud.power',
+    'hud.time',
+    'hud.fuel'
+  ];
+  $('hud-labels').innerHTML = keys.map((k) => `<div><dt>${t(k)}</dt><dd>000000</dd></div>`).join('');
+}
+
+const select = $<HTMLSelectElement>('lang');
+select.innerHTML = LANGS.map((l) => `<option value="${l.id}">${l.label}</option>`).join('');
+select.value = initLang();
+select.addEventListener('change', () => setLang(select.value as Lang));
+onLangChange(() => {
+  select.value = getLang();
+  renderText();
 });
+for (const id of ['level', 'code', 'bonus', 'heat']) $(id).addEventListener('input', draw);
+
+renderText();
+draw();
