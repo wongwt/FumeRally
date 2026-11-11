@@ -233,7 +233,7 @@ describe('bindSfx', () => {
     sim.events.emit('go', {});
     sim.events.emit('powerUp', { x: 0, y: 0 });
     sim.events.emit('rockSmashed', { rock, points: 20, crush: false });
-    sim.events.emit('armorBroke', { x: 0, y: 0 });
+    sim.events.emit('armorBroke', { x: 0, y: 0, by: 'rock' });
     sim.events.emit('siren', { x: 0, y: 0, count: 1 });
     expect(spies.puff).toHaveBeenCalledTimes(1);
     expect(spies.empty).toHaveBeenCalledTimes(1);

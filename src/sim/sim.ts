@@ -106,7 +106,9 @@ export interface SimEvents {
   /** `crush` is true when a rock-crushing car did it (no invincibility needed). */
   rockSmashed: { rock: Rock; points: number; crush: boolean };
   /** Armor absorbed a hit from a rock or a chaser. */
-  armorBroke: { x: number; y: number };
+  armorBroke: { x: number; y: number; by: 'rock' | 'chaser' };
+  /** The score changed (for score-based achievements). */
+  score: { score: number };
   /** The police siren stunned `count` chasers. */
   siren: { x: number; y: number; count: number };
   enemyKnocked: { enemy: Enemy; points: number; x: number; y: number };
@@ -350,6 +352,7 @@ export class Sim {
   private addScore(n: number): void {
     this.score += n;
     if (this.score > this.hi) this.hi = this.score;
+    this.events.emit('score', { score: this.score });
   }
 
   private updatePlay(dt: number, want: Vec | null, smoke: boolean): void {
@@ -423,7 +426,7 @@ export class Sim {
         this.armor -= 1;
         this.hitT = ARMOR_GRACE;
         this.breakRock(r, false);
-        this.events.emit('armorBroke', { x: r.x, y: r.y });
+        this.events.emit('armorBroke', { x: r.x, y: r.y, by: 'rock' });
       } else {
         this.crash('rock');
         return;
@@ -441,7 +444,7 @@ export class Sim {
           this.armor -= 1;
           this.hitT = ARMOR_GRACE;
           this.knockOut(en, false);
-          this.events.emit('armorBroke', { x: px, y: py });
+          this.events.emit('armorBroke', { x: px, y: py, by: 'chaser' });
         } else {
           this.crash('caught');
           return;

@@ -131,7 +131,7 @@ describe('armor', () => {
     expect(sim.armor).toBe(0);
     expect(sim.hitT).toBeCloseTo(ARMOR_GRACE, 1);
     expect(sim.score).toBe(ROCK_POINTS);
-    expect(broke).toHaveBeenCalledWith({ x: 13, y: 17 });
+    expect(broke).toHaveBeenCalledWith({ x: 13, y: 17, by: 'rock' });
     expect(smashed).toHaveBeenCalledWith(expect.objectContaining({ crush: false }));
   });
 
