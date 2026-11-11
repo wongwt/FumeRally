@@ -17,12 +17,18 @@ export class PlayerView {
     stage.actorGroup.add(this.car.group);
   }
 
-  /** The car is back on the start tile: undo the crash animation and face the right way. */
+  /**
+   * The car is back on the start tile: undo the crash animation and face the right way.
+   * The sim announces this while it is still in its 'dying' phase, so do not go through `update`,
+   * which would apply the shrinking animation again.
+   */
   reset(sim: Sim): void {
-    this.car.group.scale.setScalar(1);
-    this.car.group.visible = true;
+    const g = this.car.group;
     this.heading = faceAngle(sim.player.fx, sim.player.fy);
-    this.update(0, sim);
+    g.scale.setScalar(1);
+    g.visible = true;
+    g.position.set(wx(posX(sim.player)), 0, wz(posY(sim.player)));
+    g.rotation.y = this.heading;
   }
 
   update(dt: number, sim: Sim): void {
@@ -33,6 +39,8 @@ export class PlayerView {
       g.rotation.y += dt * 14;
       g.scale.setScalar(Math.max(0.01, 1 - Math.min(1, sim.stateT / 0.9)));
     } else {
+      // outside the crash animation the car is always full size, whatever happened before
+      if (g.scale.x !== 1) g.scale.setScalar(1);
       this.heading = lerpAngle(this.heading, faceAngle(sim.player.fx, sim.player.fy), 1 - Math.exp(-16 * dt));
       g.rotation.y = this.heading;
     }
