@@ -66,7 +66,7 @@ if (stage) {
     pause: () => g.togglePause(),
     toggleView: () => btnView.click()
   });
-  bindTouch(g.input, $('stage'), () => g.confirm());
+  bindTouch(g.input, $('stage'), () => void g.confirm());
 
   btnPause.addEventListener('click', () => {
     g.togglePause();

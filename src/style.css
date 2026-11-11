@@ -199,7 +199,16 @@ button:focus-visible {
 .pad.down svg {
   transform: rotate(180deg);
 }
-.pad.active {
+.smoke {
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  font-size: 15px;
+  touch-action: none;
+  border-color: var(--enemy);
+}
+.pad.active,
+.smoke.active {
   background: var(--line);
   border-color: var(--player);
 }

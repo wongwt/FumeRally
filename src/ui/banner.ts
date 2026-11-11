@@ -41,7 +41,7 @@ export class Banner {
         );
         break;
       case 'dying':
-        this.show(`<p class="big">${t(sim.crashWhy === 'fuel' ? 'crash.fuel' : 'crash.rock')}</p>`, 'toast');
+        this.show(`<p class="big">${t(`crash.${sim.crashWhy}`)}</p>`, 'toast');
         break;
       case 'clear':
         this.show(
@@ -69,7 +69,8 @@ function titleHtml(): string {
   return (
     `<p class="eyebrow">${t('app.subtitle')}</p><h2>${t('app.title')}</h2>` +
     `<p class="lead">${t('title.lead')}</p>` +
-    `<ul class="legend"><li>${kbd('↑', '↓', '←', '→')} ${t('keys.or')} ${kbd('W', 'A', 'S', 'D')} ${t('title.drive')}</li></ul>` +
+    `<ul class="legend"><li>${kbd('↑', '↓', '←', '→')} ${t('keys.or')} ${kbd('W', 'A', 'S', 'D')} ${t('title.drive')}</li>` +
+    `<li>${spaceKey()} ${t('title.smoke')}&emsp;${kbd('V')} ${t('keys.view')}</li></ul>` +
     `<p class="cta">${t('cta.start', { key: spaceKey() })}</p>`
   );
 }

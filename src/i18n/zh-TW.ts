@@ -23,7 +23,10 @@ export const zhTW = {
   'error.webgl.title': '無法啟動 WebGL',
   'error.webgl.body': '這個瀏覽器或裝置沒有開啟 WebGL，遊戲無法顯示。',
 
-  'title.lead': '吃光所有寶石過關。燃料不斷消耗，寶石能補油；小心岩石，一撞就爆。',
+  'title.lead': '吃光寶石、甩開紅色追兵。追兵靠近時放廢氣讓牠們動彈不得，小心岩石，一撞就爆。',
+  'title.smoke': '放廢氣（耗燃料）',
+  'crash.caught': '被追上了',
+  'btn.smoke': '廢氣',
   'title.drive': '駕駛，車子自動前進',
   'cta.start': '按 {key} 或點一下畫面開始',
   'cta.restart': '按 {key} 或點一下畫面重新開始',

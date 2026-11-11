@@ -25,7 +25,10 @@ export const en: Messages = {
   'error.webgl.body': 'This browser or device has WebGL turned off, so the game cannot be shown.',
 
   'title.lead':
-    'Collect every gem to clear the stage. Fuel drains constantly and gems top it up. Watch out for rocks: one hit and you crash.',
+    'Collect every gem and shake off the red chasers. Drop exhaust to freeze them when they get close, and watch out for rocks: one hit and you crash.',
+  'title.smoke': 'drops exhaust (uses fuel)',
+  'crash.caught': 'Caught!',
+  'btn.smoke': 'Smoke',
   'title.drive': 'to steer. The car drives itself',
   'cta.start': 'Press {key} or tap the screen to start',
   'cta.restart': 'Press {key} or tap the screen to play again',

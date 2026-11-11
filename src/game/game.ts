@@ -4,8 +4,10 @@ import { PlayerInput } from '../input/playerInput';
 import { makeSedan } from '../render/carModel';
 import type { ViewMode } from '../render/cameraRig';
 import { wx, wz } from '../render/coords';
+import { EnemyView } from '../render/enemyView';
 import { Fx } from '../render/fx';
 import { COL } from '../render/palette';
+import { SmokeView } from '../render/smokeView';
 import type { Stage3D } from '../render/stage3d';
 import { WorldView } from '../render/worldView';
 import { posX, posY } from '../sim/movement';
@@ -33,6 +35,8 @@ export class Game {
   private readonly car = makeSedan(COL.player, true);
   private readonly world: WorldView;
   private readonly fx: Fx;
+  private readonly enemyView: EnemyView;
+  private readonly smokeView: SmokeView;
   private readonly stepper = new FixedStepper(STEP, 0.1);
   private heading = faceAngle(0, -1);
   private shake = 0;
@@ -44,6 +48,8 @@ export class Game {
   ) {
     this.world = new WorldView(stage);
     this.fx = new Fx(stage.fxGroup);
+    this.enemyView = new EnemyView(stage, this.sim.enemies);
+    this.smokeView = new SmokeView(stage.fxGroup);
     stage.actorGroup.add(this.car.group);
     this.listen();
     this.onLevelLoaded();
@@ -55,10 +61,12 @@ export class Game {
     return this.stage.rig.view;
   }
 
-  /** Space / Enter / tap: start a game or resume from pause. */
-  confirm(): void {
+  /** Space / Enter / tap: start a game or resume from pause. Returns true if it did either. */
+  confirm(): boolean {
     if (this.sim.wantsStart) this.sim.startGame();
     else if (this.sim.phase === 'paused') this.sim.togglePause();
+    else return false;
+    return true;
   }
 
   togglePause(): void {
@@ -89,11 +97,16 @@ export class Game {
       this.car.group.visible = true;
       this.heading = faceAngle(this.sim.player.fx, this.sim.player.fy);
       this.syncCar(0);
+      this.enemyView.snapHeadings();
+      this.smokeView.clear();
     });
     events.on('gemTaken', ({ gem, points }) => {
       this.world.removeGem(gem);
       this.ui.popups.show('+' + points, gem.x, gem.y, '#ffc83d');
       this.fx.ring(gem.x, gem.y, COL.gem, 1.3);
+    });
+    events.on('enemyStunned', ({ points, x, y }) => {
+      this.ui.popups.show('+' + points, x, y, '#d5dde2');
     });
     events.on('crash', ({ x, y }) => {
       this.shake = 0.45;
@@ -109,6 +122,7 @@ export class Game {
     this.stage.setMaze(this.sim.maze);
     this.world.rebuild(this.sim.gems, this.sim.rocks);
     this.fx.clear();
+    this.smokeView.clear();
     this.stage.rig.snapTo(START.x, START.y);
   }
 
@@ -117,7 +131,7 @@ export class Game {
     this.last = now;
     this.stepper.advance(dt, (step) => {
       this.input.update(step);
-      this.sim.update(step, this.input.want);
+      this.sim.update(step, this.input.want, this.input.takeSmoke());
     });
     this.render(dt);
     requestAnimationFrame(this.frame);
@@ -128,6 +142,8 @@ export class Game {
     if (sim.phase !== 'paused') {
       this.world.update(dt, sim.time);
       this.fx.update(dt);
+      this.enemyView.update(dt, sim.time);
+      this.smokeView.update(sim.clouds);
     }
     this.syncCar(dt);
     this.ui.hud.update(sim);
