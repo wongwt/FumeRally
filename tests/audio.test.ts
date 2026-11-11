@@ -228,7 +228,7 @@ describe('bindSfx', () => {
     sim.events.emit('enemyStunned', { enemy, points: 50, x: 0, y: 0 });
     sim.events.emit('enemyKnocked', { enemy, points: 200, x: 0, y: 0 });
     sim.events.emit('crash', { why: 'rock', x: 0, y: 0 });
-    sim.events.emit('levelClear', { fuelBonus: 0, time: 0 });
+    sim.events.emit('levelClear', { fuelBonus: 0, time: 0, flawless: true, path: [], gems: [] });
     sim.events.emit('bonusEnd', { perfect: true, award: 0 });
     sim.events.emit('go', {});
     sim.events.emit('powerUp', { x: 0, y: 0 });

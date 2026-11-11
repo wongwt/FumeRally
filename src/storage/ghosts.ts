@@ -1,17 +1,10 @@
+import type { GhostData } from '../sim/ghost';
 import { readJson, writeJson, type StorageLike } from './storage';
+
+export type { GhostData };
 
 export const GHOSTS_KEY = 'fumeRallyGhosts';
 const MAX_GHOSTS = 30;
-
-/** A recorded run of one stage. */
-export interface GhostData {
-  /** clear time in seconds */
-  t: number;
-  /** x, y pairs (×16, rounded) sampled every 0.05 s */
-  p: number[];
-  /** time of each gem pickup, in order */
-  g: number[];
-}
 
 const isNumbers = (a: unknown): a is number[] => Array.isArray(a) && a.every((n) => Number.isFinite(n));
 

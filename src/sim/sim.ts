@@ -52,6 +52,7 @@ import {
   resetEnemies
 } from './enemies';
 import { advance, choosePlayerDir, createMover, posX, posY, resetPlayer, reverseIfWanted } from './movement';
+import { GhostRecorder, type GhostData } from './ghost';
 import { type Gem, type Rock, spawnGems, spawnRocks, specialOrder } from './spawn';
 
 export type Phase = 'title' | 'ready' | 'play' | 'dying' | 'clear' | 'over' | 'paused';
@@ -83,7 +84,17 @@ export interface SimEvents {
   puffEmpty: Record<string, never>;
   enemyStunned: { enemy: Enemy; points: number; x: number; y: number };
   crash: { why: CrashReason; x: number; y: number };
-  levelClear: { fuelBonus: number; time: number };
+  levelClear: {
+    fuelBonus: number;
+    time: number;
+    /** No car was lost on this stage, so the run may set a best time. */
+    flawless: boolean;
+    /** The recorded run: positions and gem times. */
+    path: number[];
+    gems: number[];
+  };
+  /** A gem was picked up while racing a ghost; `delta` is seconds behind (+) or ahead (−) of it. */
+  ghostSplit: { delta: number; x: number; y: number };
   /** The bonus stage ended; `award` is 0 when time ran out. */
   bonusEnd: { perfect: boolean; award: number };
   powerUp: { x: number; y: number };
@@ -112,6 +123,10 @@ export class Sim {
   startLevel = 1;
   /** 0 for the built-in maps; a hash of the level code otherwise. */
   challengeSeed = 0;
+  /** Board key: 'N' or 'C:<code>'. Set with the seed by whoever picks the challenge. */
+  challengeKey = 'N';
+  /** Id of the car being driven (affects which best times and ghosts apply). */
+  carId = 'sedan';
   bonus = false;
 
   score = 0;
@@ -140,6 +155,12 @@ export class Sim {
   rocks: Rock[] = [];
   readonly enemies = createEnemies();
   clouds: Cloud[] = [];
+  readonly recorder = new GhostRecorder();
+  /** The run to race against on this stage, if any; set by whoever stores ghosts. */
+  ghost: GhostData | null = null;
+  ghostOn = true;
+  /** Seconds ahead (−) or behind (+) the ghost at the last gem. */
+  ghostDelta: number | null = null;
   /** Seconds of invincibility left. */
   power = 0;
   special: Special | null = null;
@@ -216,6 +237,9 @@ export class Sim {
     this.specialIdx = 0;
     this.specialCells = specialOrder(level, this.challengeSeed);
     this.bonusT = BONUS_TIME;
+    this.recorder.reset();
+    this.ghost = null;
+    this.ghostDelta = null;
     this.fuel = FUEL_MAX;
     this.lvT = 0;
     this.lvDeaths = 0;
@@ -298,6 +322,7 @@ export class Sim {
     const p = this.player;
     this.runTime += dt;
     this.lvT += dt;
+    this.recorder.sample(dt, posX(p), posY(p));
 
     if (this.bonus) {
       this.bonusT -= dt;
@@ -344,6 +369,7 @@ export class Sim {
       this.mult = Math.min(MAX_COMBO, this.mult + 1);
       this.comboT = COMBO_TIME;
       this.events.emit('gemTaken', { gem: g, points, mult });
+      this.raceGhost(g);
     }
     const sp = this.special;
     if (sp && Math.abs(sp.x - px) < 0.55 && Math.abs(sp.y - py) < 0.55) this.takeSpecial(sp);
@@ -374,6 +400,17 @@ export class Sim {
         return;
       }
     }
+  }
+
+  /** Logs the pickup time for the ghost and, if racing one, how far ahead or behind it we are. */
+  private raceGhost(g: Gem): void {
+    const t = Math.round(this.lvT * 100) / 100;
+    this.recorder.addGem(t);
+    const k = this.recorder.gems.length - 1;
+    const split = this.ghost?.g[k];
+    if (!this.ghostOn || split == null) return;
+    this.ghostDelta = t - split;
+    this.events.emit('ghostSplit', { delta: this.ghostDelta, x: g.x, y: g.y });
   }
 
   /** Puts the next rainbow gem on the map, skipping spots near the player or on uncollected gems. */
@@ -505,7 +542,13 @@ export class Sim {
     this.lastFuelBonus = Math.round(this.fuel) * FUEL_BONUS;
     this.addScore(this.lastFuelBonus);
     this.clearedInRun += 1;
-    this.events.emit('levelClear', { fuelBonus: this.lastFuelBonus, time: this.lvT });
+    this.events.emit('levelClear', {
+      fuelBonus: this.lastFuelBonus,
+      time: this.lvT,
+      flawless: this.lvDeaths === 0,
+      path: this.recorder.path.slice(),
+      gems: this.recorder.gems.slice()
+    });
     this.setPhase('clear');
   }
 
