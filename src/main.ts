@@ -7,6 +7,7 @@ import { Stage3D } from './render/stage3d';
 import { Banner } from './ui/banner';
 import { Hud } from './ui/hud';
 import { Popups } from './ui/popups';
+import { Radar } from './ui/radar';
 
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
 const bannerEl = $('banner');
@@ -56,6 +57,7 @@ if (stage) {
     hud: new Hud(),
     banner: new Banner(bannerEl),
     popups: new Popups($('stage'), (x, y) => s.rig.project(x, y)),
+    radar: new Radar($<HTMLCanvasElement>('radar')),
     onPhase: () => {
       btnPause.textContent = t(game?.sim.phase === 'paused' ? 'btn.resume' : 'btn.pause');
     }
@@ -74,6 +76,7 @@ if (stage) {
   });
   btnView.addEventListener('click', () => {
     g.setView(g.view === 'scroll' ? 'full' : 'scroll');
+    $('play').classList.toggle('scroll', g.view === 'scroll');
     btnView.textContent = t(g.view === 'full' ? 'view.full' : 'view.scroll');
     btnView.blur();
   });

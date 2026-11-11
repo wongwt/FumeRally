@@ -56,6 +56,13 @@ body {
   letter-spacing: 0.08em;
 }
 
+.play {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  gap: 10px;
+}
 .stage {
   position: relative;
   flex: 1 1 0;
@@ -421,5 +428,86 @@ button:focus-visible {
   }
   .fuel-track.bad {
     animation: none;
+  }
+}
+
+/* ---------- Radar ---------- */
+.side {
+  flex: none;
+  width: 240px;
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  overflow-y: auto;
+}
+.play.scroll .side {
+  display: flex;
+}
+.radar {
+  display: flex;
+  flex: none;
+  width: 100%;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  pointer-events: none;
+}
+.radar-title {
+  margin: 0;
+  font: 9px/1 var(--font-pixel);
+  color: var(--player);
+  letter-spacing: 0.08em;
+}
+#radar {
+  width: 100%;
+  height: auto;
+  display: block;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  image-rendering: pixelated;
+}
+.radar-key {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 11px;
+  color: var(--dim);
+}
+.radar-key i {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  vertical-align: -1px;
+}
+@media (max-width: 720px) {
+  .side,
+  .play.scroll .side {
+    display: contents;
+  }
+  .radar {
+    display: none;
+  }
+  .play.scroll .radar {
+    display: flex;
+    position: absolute;
+    z-index: 2;
+    top: 8px;
+    right: 8px;
+    width: 118px;
+    padding: 6px;
+    gap: 4px;
+    opacity: 0.94;
+  }
+  .radar-key,
+  .radar-title {
+    display: none;
   }
 }

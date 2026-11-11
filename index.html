@@ -39,6 +39,10 @@
           <dd id="gemsLeft">0</dd>
         </div>
         <div class="stat">
+          <dt data-i18n="hud.power"></dt>
+          <dd id="power">—</dd>
+        </div>
+        <div class="stat">
           <dt data-i18n="hud.time"></dt>
           <dd id="timeEl">0:00.0</dd>
         </div>
@@ -53,10 +57,24 @@
       <label>Level <input id="level" type="number" min="1" max="99" value="1" /></label>
       <label>Code <input id="code" type="text" maxlength="12" placeholder="RALLY7" /></label>
     </div>
-    <main class="stage" id="stage" tabindex="0">
-      <canvas id="gl" aria-label="Game"></canvas>
-      <div class="banner" id="banner" hidden></div>
-    </main>
+    <div class="play scroll" id="play">
+      <main class="stage" id="stage" tabindex="0">
+        <canvas id="gl" aria-label="Game"></canvas>
+        <div class="banner" id="banner" hidden></div>
+      </main>
+      <div class="side">
+        <aside class="radar" aria-label="Radar">
+          <p class="radar-title">RADAR</p>
+          <canvas id="radar"></canvas>
+          <ul class="radar-key">
+            <li><i style="background: #37c6ff"></i><span data-i18n="radar.you"></span></li>
+            <li><i style="background: #ff5b4b"></i><span data-i18n="radar.chaser"></span></li>
+            <li><i style="background: #ffc83d"></i><span data-i18n="radar.gem"></span></li>
+            <li><i style="background: #b8b0a2"></i><span data-i18n="radar.rock"></span></li>
+          </ul>
+        </aside>
+      </div>
+    </div>
     <footer class="foot">
       <p class="keys">
         <span>
