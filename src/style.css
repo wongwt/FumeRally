@@ -634,7 +634,7 @@ button:disabled {
 }
 .brow {
   display: grid;
-  grid-template-columns: 1.4em 1fr 2.2em 3.4em;
+  grid-template-columns: 1.4em 1fr 2.2em 3.4em 2.4em;
   gap: 6px;
   align-items: baseline;
   font-variant-numeric: tabular-nums;
@@ -719,4 +719,130 @@ button:disabled {
   .narrow-only {
     display: inline-block;
   }
+}
+
+/* ---------- Garage ---------- */
+.garage {
+  display: grid;
+  gap: 8px;
+}
+.cars {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+.car-btn {
+  display: grid;
+  gap: 3px;
+  justify-items: center;
+  padding: 7px 2px;
+  background: var(--bg);
+  min-width: 0;
+}
+.car-btn .cico {
+  display: block;
+  width: 100%;
+  max-width: 58px;
+}
+.cico svg,
+.mini svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.mini {
+  display: inline-block;
+  width: 2.4em;
+  vertical-align: middle;
+}
+.car-btn span {
+  font-size: 10px;
+  color: var(--dim);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.car-btn[aria-pressed='true'] {
+  background: var(--line);
+  border-color: var(--player);
+}
+.car-btn:disabled .cico {
+  opacity: 0.85;
+}
+
+/* ---------- Dialogs ---------- */
+.modal {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  padding: 12px;
+  background: rgba(5, 12, 18, 0.92);
+  overflow: auto;
+}
+.mcard {
+  width: min(100%, 30rem);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 18px 22px;
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  text-align: center;
+  max-height: 100%;
+  overflow: auto;
+  margin: auto;
+}
+.mcard h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  line-height: 1.2;
+}
+.mcard p {
+  margin: 0;
+  text-wrap: pretty;
+}
+.mcar {
+  width: min(60%, 200px);
+}
+.mcar svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.stbars {
+  display: grid;
+  gap: 6px;
+  width: min(100%, 20rem);
+}
+.stbar {
+  display: grid;
+  grid-template-columns: 3em 1fr 3.6em;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  color: var(--dim);
+  text-align: left;
+}
+.stbar i {
+  display: block;
+  height: 8px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.stbar u {
+  display: block;
+  height: 100%;
+  background: var(--player);
+}
+.stbar em {
+  font: 10px/1 var(--font-pixel);
+  font-style: normal;
+  color: var(--fg);
+  text-align: right;
 }

@@ -38,6 +38,10 @@
           <dt data-i18n="hud.gems"></dt>
           <dd id="gemsLeft">0</dd>
         </div>
+        <div class="stat" id="armorStat" hidden>
+          <dt id="armorLabel"></dt>
+          <dd id="armorEl">●</dd>
+        </div>
         <div class="stat">
           <dt data-i18n="hud.power"></dt>
           <dd id="power">—</dd>
@@ -54,12 +58,16 @@
     </header>
     <div class="debug" id="debug" hidden>
       <span>DEV</span>
-      <label>Level <input id="level" type="number" min="1" max="99" value="1" /></label>
+      <label>Level <input id="devLevel" type="number" min="1" max="99" value="1" /></label>
+      <label
+        >Cars unlocked through stage <input id="devCarLv" type="number" min="0" max="40" placeholder="0"
+      /></label>
     </div>
     <div class="play scroll" id="play">
       <main class="stage" id="stage" tabindex="0">
         <canvas id="gl" aria-label="Game"></canvas>
         <div class="banner" id="banner" hidden></div>
+        <div class="modal" id="modal" hidden></div>
       </main>
       <div class="side">
         <aside class="radar" aria-label="Radar">
@@ -73,6 +81,11 @@
           </ul>
         </aside>
         <section class="challenge" id="challenge" aria-label="Challenge and leaderboard">
+          <div class="garage">
+            <p class="radar-title">GARAGE</p>
+            <div class="cars" id="cars" role="group"></div>
+            <p class="hint" id="carHint"></p>
+          </div>
           <p class="radar-title">CHALLENGE</p>
           <div class="seg" role="group">
             <button type="button" class="seg-btn" data-mode="normal" aria-pressed="true"></button>

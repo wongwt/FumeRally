@@ -1,3 +1,4 @@
+import { CARS, carUnlocked, isCarId, unlockedCars, type CarId } from '../config/cars';
 import { START, type DirName } from '../config/constants';
 import { normCode, type ChallengeMode } from '../core/challenge';
 import { PlayerInput } from '../input/playerInput';
@@ -21,6 +22,9 @@ import type { GhostStore } from '../storage/ghosts';
 import type { Prefs } from '../storage/prefs';
 import type { Records } from '../storage/records';
 import { Banner, type ScreenContext } from '../ui/banner';
+import type { Garage } from '../ui/garage';
+import { Modal } from '../ui/modal';
+import { unlockModalHtml } from '../ui/unlockModal';
 import type { ChallengePanel, PanelModel } from '../ui/challengePanel';
 import type { Hud } from '../ui/hud';
 import type { Popups } from '../ui/popups';
@@ -43,6 +47,11 @@ export interface GameUi {
   popups: Popups;
   radar: Radar;
   panel: ChallengePanel;
+  garage: Garage;
+  /** Element the dialogs (new car) are drawn into. */
+  modalEl: HTMLElement;
+  /** The new-car dialog just opened (play a jingle). */
+  onUnlockShown?: () => void;
   /** Called whenever the phase may have changed (to relabel buttons, close the mobile drawer). */
   onPhase?: (sim: Sim) => void;
   /** Start was requested with a level code that is not valid yet. */
@@ -59,6 +68,7 @@ export class Game {
   readonly progress: Progress;
   readonly challenge: ChallengeState;
   private readonly banner: Banner;
+  readonly modal: Modal;
   private readonly player: PlayerView;
   private readonly world: WorldView;
   private readonly fx: Fx;
@@ -79,6 +89,10 @@ export class Game {
     this.progress = new Progress(this.sim, services.records, services.ghosts);
     this.challenge = new ChallengeState(services.prefs);
     this.banner = new Banner(ui.bannerEl, () => this.screenContext());
+    this.modal = new Modal(ui.modalEl);
+    this.modal.onClose = () => {
+      this.sim.holdClear = false;
+    };
     this.player = new PlayerView(stage);
     this.world = new WorldView(stage);
     this.fx = new Fx(stage.fxGroup);
@@ -91,7 +105,34 @@ export class Game {
 
   /** Applies the saved challenge and draws the first screen. Call once after construction. */
   init(): void {
+    const saved = this.services.prefs.car;
+    this.applyCar(isCarId(saved) && carUnlocked(saved, this.services.records.data.carLv) ? saved : 'sedan');
     this.applyChallenge();
+  }
+
+  /** Puts the player in this car: stats, model and camera reach. Does not touch the stage. */
+  private applyCar(id: CarId): void {
+    this.sim.setCar(id);
+    this.player.setCar(id);
+    this.stage.rig.setViewScale(CARS[id].view ?? 1);
+  }
+
+  /** Chooses a car (title and game-over screens only); ghosts and best times follow the car. */
+  selectCar(id: CarId): void {
+    const { sim, services } = this;
+    if (!sim.wantsStart || id === sim.carId || !carUnlocked(id, services.records.data.carLv)) return;
+    this.applyCar(id);
+    services.prefs.car = id;
+    services.prefs.saveChallenge();
+    this.applyChallenge();
+  }
+
+  /** Left/right on the menu: next or previous unlocked car. */
+  cycleCar(delta: 1 | -1): void {
+    const list = unlockedCars(this.services.records.data.carLv);
+    if (list.length < 2) return;
+    const i = list.indexOf(this.sim.carId);
+    this.selectCar(list[(i + delta + list.length) % list.length] as CarId);
   }
 
   get view(): ViewMode {
@@ -124,6 +165,7 @@ export class Game {
   menuDir(dir: DirName): boolean {
     if (!this.sim.wantsStart) return false;
     if (dir === 'up' || dir === 'down') this.changeStartLevel(dir === 'up' ? 1 : -1);
+    else this.cycleCar(dir === 'right' ? 1 : -1);
     return true;
   }
 
@@ -191,6 +233,11 @@ export class Game {
 
   refreshPanel(): void {
     this.ui.panel.update(this.panelModel());
+    this.ui.garage.update({
+      selected: this.sim.carId,
+      carLv: this.services.records.data.carLv,
+      locked: !this.sim.wantsStart
+    });
   }
 
   private challengeLabel(): string {
@@ -216,7 +263,8 @@ export class Game {
       ghostOn: services.prefs.ghostOn,
       label: this.challengeLabel(),
       rows: services.records.boardOf(sim.challengeKey),
-      stageTimes
+      stageTimes,
+      carName: t(`car.${sim.carId}.name`)
     };
   }
 
@@ -225,6 +273,10 @@ export class Game {
     const cleared = services.records.data.cleared;
     return {
       challengeLabel: this.challengeLabel(),
+      carPicker:
+        unlockedCars(services.records.data.carLv).length >= 2
+          ? { id: sim.carId, name: t(`car.${sim.carId}.name`) }
+          : null,
       picker: sim.challengeKey === 'N' && cleared >= 1 ? { level: sim.startLevel, max: cleared + 1 } : null,
       records: services.records.boardOf(sim.challengeKey),
       clear: this.progress.lastClear
@@ -274,8 +326,17 @@ export class Game {
       this.fx.ring(rock.x, rock.y, 0xb8b0a2, 1.5);
       this.shake = Math.max(this.shake, 0.15);
     });
+    events.on('armorBroke', ({ x, y }) => {
+      popups.show(t('popup.armorBroke'), x, y - 0.6, '#ffe29a');
+      this.fx.ring(x, y, 0xffe29a, 2.0);
+      this.shake = Math.max(this.shake, 0.3);
+    });
+    events.on('siren', ({ x, y }) => {
+      popups.show(t('popup.siren'), x, y - 0.6, '#9fb4ff');
+      this.fx.ring(x, y, 0x5b7bff, 2.8);
+    });
     events.on('enemyKnocked', ({ points, x, y }) => {
-      popups.show('+' + points, x, y, '#ff8a7c');
+      if (points > 0) popups.show('+' + points, x, y, '#ff8a7c');
       this.fx.ring(x, y, COL.enemy, 1.8);
       this.shake = Math.max(this.shake, 0.2);
     });
@@ -312,6 +373,17 @@ export class Game {
     this.stage.rig.snapTo(START.x, START.y);
   }
 
+  /** A little way into the clear screen, announce a newly unlocked car and hold the screen until it is closed. */
+  private announceUnlock(): void {
+    const car = this.progress.pendingUnlock;
+    if (!car || this.sim.phase !== 'clear' || this.sim.stateT < 1.6 || this.modal.isOpen) return;
+    this.progress.pendingUnlock = null;
+    this.sim.holdClear = true;
+    this.input.clear();
+    this.modal.show(unlockModalHtml(car));
+    this.ui.onUnlockShown?.();
+  }
+
   private readonly frame = (now: number): void => {
     const dt = Math.min(0.1, Math.max(0, (now - this.last) / 1000));
     this.last = now;
@@ -333,6 +405,7 @@ export class Game {
       this.specialView.update(dt, sim.time, sim.special);
     }
     this.player.update(dt, sim);
+    this.announceUnlock();
     this.ghostView.update(dt, sim);
     this.ui.hud.update(sim);
     if (this.shake > 0) this.shake -= dt;

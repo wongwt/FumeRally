@@ -1,6 +1,7 @@
 import { AudioEngine } from './audio/engine';
 import { loadMuted, saveMuted } from './audio/settings';
 import { bindSfx, Sfx } from './audio/sfx';
+import { carUnlocked } from './config/cars';
 import { Game } from './game/game';
 import { getLang, initLang, LANGS, onLangChange, setLang, t, type Lang, type MessageKey } from './i18n';
 import { bindKeyboard } from './input/keyboard';
@@ -9,6 +10,7 @@ import { Stage3D } from './render/stage3d';
 import { Hud } from './ui/hud';
 import { Popups } from './ui/popups';
 import { ChallengePanel } from './ui/challengePanel';
+import { Garage } from './ui/garage';
 import { Radar } from './ui/radar';
 import { GhostStore } from './storage/ghosts';
 import { Prefs } from './storage/prefs';
@@ -32,6 +34,7 @@ prefs.load();
 
 const audio = new AudioEngine();
 audio.muted = loadMuted();
+const sfx = new Sfx(audio);
 
 let game: Game | null = null;
 let webglFailed = false;
@@ -89,6 +92,9 @@ if (stage) {
       popups: new Popups($('stage'), (x, y) => s.rig.project(x, y)),
       radar: new Radar($<HTMLCanvasElement>('radar')),
       panel,
+      garage: new Garage($('cars'), (id) => game?.selectCar(id)),
+      modalEl: $('modal'),
+      onUnlockShown: () => sfx.clear(),
       onPhase: (sim) => {
         btnPause.textContent = t(sim.phase === 'paused' ? 'btn.resume' : 'btn.pause');
         if (!sim.wantsStart) playEl.classList.remove('drawer'); // close the mobile challenge drawer once a game starts
@@ -109,12 +115,15 @@ if (stage) {
     pause: () => g.togglePause(),
     toggleView: () => btnView.click(),
     toggleMute: () => btnMute.click(),
-    menuDir: (dir) => g.menuDir(dir)
+    menuDir: (dir) => g.menuDir(dir),
+    modalOpen: () => g.modal.isOpen,
+    closeModal: () => g.modal.close()
   });
-  bindSfx(g.sim.events, new Sfx(audio));
+  bindSfx(g.sim.events, sfx);
   bindTouch(g.input, $('stage'), () => void g.confirm(), {
     active: () => g.sim.wantsStart,
-    step: (d) => g.changeStartLevel(d)
+    step: (d) => g.changeStartLevel(d),
+    cycle: (d) => g.cycleCar(d)
   });
 
   // Browsers only allow audio after a user gesture, so (re)start it on every press, before other handlers run.
@@ -150,11 +159,17 @@ if (stage) {
   if (import.meta.env.DEV) {
     // Developer panel: jump to any starting stage without playing up to it.
     $('debug').hidden = false;
-    $('level').addEventListener('input', () => {
-      const level = Math.max(1, Math.min(99, Math.floor(Number($<HTMLInputElement>('level').value)) || 1));
+    $('devLevel').addEventListener('input', () => {
+      const level = Math.max(1, Math.min(99, Math.floor(Number($<HTMLInputElement>('devLevel').value)) || 1));
       if (!g.sim.wantsStart) return;
       g.sim.startLevel = level;
       g.sim.loadLevel(level, false);
+      g.refreshScreens();
+    });
+    $('devCarLv').addEventListener('input', () => {
+      records.data.carLv = Math.max(0, Math.floor(Number($<HTMLInputElement>('devCarLv').value)) || 0);
+      records.save();
+      if (!carUnlocked(g.sim.carId, records.data.carLv)) g.selectCar('sedan');
       g.refreshScreens();
     });
     (window as unknown as { __game: Game }).__game = g;
