@@ -1,58 +1,79 @@
-import { PLAYER_SPEED, START } from '../config/constants';
-import { lerpAngle, faceAngle } from '../core/math';
-import { buildMaze, mazeSeed, type Maze } from '../core/maze';
+import { START } from '../config/constants';
+import { faceAngle, lerpAngle } from '../core/math';
 import { DirectionInput } from '../input/directionInput';
-import { type CarModel, makeSedan } from '../render/carModel';
-import { COL } from '../render/palette';
+import { makeSedan } from '../render/carModel';
+import type { ViewMode } from '../render/cameraRig';
 import { wx, wz } from '../render/coords';
+import { Fx } from '../render/fx';
+import { COL } from '../render/palette';
 import type { Stage3D } from '../render/stage3d';
-import {
-  advance,
-  choosePlayerDir,
-  createMover,
-  posX,
-  posY,
-  resetPlayer,
-  reverseIfWanted
-} from '../sim/movement';
+import { WorldView } from '../render/worldView';
+import { posX, posY } from '../sim/movement';
+import { Sim } from '../sim/sim';
 import { FixedStepper } from '../sim/stepper';
-
-export interface LevelOptions {
-  level: number;
-  /** Seed derived from a level code; 0 for the normal built-in maps. */
-  challengeSeed: number;
-  bonus: boolean;
-}
+import type { Banner } from '../ui/banner';
+import type { Hud } from '../ui/hud';
+import type { Popups } from '../ui/popups';
 
 /** Simulation steps at 120 Hz regardless of display refresh rate. */
 const STEP = 1 / 120;
 
-/** Glue between the simulation, the 3D stage and input. Grows milestone by milestone. */
+export interface GameUi {
+  hud: Hud;
+  banner: Banner;
+  popups: Popups;
+  /** Called whenever the pause state may have changed (to relabel the button). */
+  onPhase?: (sim: Sim) => void;
+}
+
+/** Glue between the simulation, the 3D stage, input and the UI. */
 export class Game {
+  readonly sim = new Sim();
   readonly input = new DirectionInput();
-  readonly player = createMover(START.x, START.y);
-  private maze: Maze = buildMaze(mazeSeed(1, 0, false));
-  private readonly car: CarModel = makeSedan(COL.player, true);
+  private readonly car = makeSedan(COL.player, true);
+  private readonly world: WorldView;
+  private readonly fx: Fx;
   private readonly stepper = new FixedStepper(STEP, 0.1);
   private heading = faceAngle(0, -1);
+  private shake = 0;
   private last = 0;
-  // M3 only: the car waits for the first key press. M4's ready/play states replace this.
-  private started = false;
 
-  constructor(private readonly stage: Stage3D) {
+  constructor(
+    private readonly stage: Stage3D,
+    private readonly ui: GameUi
+  ) {
+    this.world = new WorldView(stage);
+    this.fx = new Fx(stage.fxGroup);
     stage.actorGroup.add(this.car.group);
-    this.loadLevel({ level: 1, challengeSeed: 0, bonus: false });
+    this.listen();
+    this.onLevelLoaded();
+    ui.banner.render(this.sim);
+    ui.onPhase?.(this.sim);
   }
 
-  loadLevel(opts: LevelOptions): void {
-    this.maze = buildMaze(mazeSeed(opts.level, opts.challengeSeed, opts.bonus));
-    this.stage.setMaze(this.maze);
-    resetPlayer(this.player, this.maze, START.x, START.y);
-    this.heading = faceAngle(this.player.fx, this.player.fy);
-    this.started = false;
-    this.input.clear();
-    this.stage.rig.snapTo(START.x, START.y);
-    this.syncCar(0);
+  get view(): ViewMode {
+    return this.stage.rig.view;
+  }
+
+  /** Space / Enter / tap: start a game or resume from pause. */
+  confirm(): void {
+    if (this.sim.wantsStart) this.sim.startGame();
+    else if (this.sim.phase === 'paused') this.sim.togglePause();
+  }
+
+  togglePause(): void {
+    this.sim.togglePause();
+  }
+
+  setView(view: ViewMode): void {
+    this.stage.rig.setView(view);
+  }
+
+  /** Re-renders text that depends on the language. */
+  refreshText(): void {
+    this.ui.banner.render(this.sim);
+    this.ui.hud.invalidate();
+    this.ui.onPhase?.(this.sim);
   }
 
   start(): void {
@@ -60,32 +81,71 @@ export class Game {
     requestAnimationFrame(this.frame);
   }
 
+  private listen(): void {
+    const { events } = this.sim;
+    events.on('levelLoaded', () => this.onLevelLoaded());
+    events.on('respawn', () => {
+      this.car.group.scale.setScalar(1);
+      this.car.group.visible = true;
+      this.heading = faceAngle(this.sim.player.fx, this.sim.player.fy);
+      this.syncCar(0);
+    });
+    events.on('gemTaken', ({ gem, points }) => {
+      this.world.removeGem(gem);
+      this.ui.popups.show('+' + points, gem.x, gem.y, '#ffc83d');
+      this.fx.ring(gem.x, gem.y, COL.gem, 1.3);
+    });
+    events.on('crash', ({ x, y }) => {
+      this.shake = 0.45;
+      this.fx.ring(x, y, COL.enemy, 2.2);
+    });
+    events.on('phase', () => {
+      this.ui.banner.render(this.sim);
+      this.ui.onPhase?.(this.sim);
+    });
+  }
+
+  private onLevelLoaded(): void {
+    this.stage.setMaze(this.sim.maze);
+    this.world.rebuild(this.sim.gems, this.sim.rocks);
+    this.fx.clear();
+    this.stage.rig.snapTo(START.x, START.y);
+  }
+
   private readonly frame = (now: number): void => {
     const dt = Math.min(0.1, Math.max(0, (now - this.last) / 1000));
     this.last = now;
-    this.stepper.advance(dt, (step) => this.update(step));
-    this.syncCar(dt);
-    this.stage.render(dt, posX(this.player), posY(this.player));
+    this.stepper.advance(dt, (step) => {
+      this.input.update(step);
+      this.sim.update(step, this.input.want);
+    });
+    this.render(dt);
     requestAnimationFrame(this.frame);
   };
 
-  private update(dt: number): void {
-    const p = this.player;
-    this.input.update(dt);
-    if (!this.started) {
-      if (!this.input.want) return;
-      this.started = true;
+  private render(dt: number): void {
+    const sim = this.sim;
+    if (sim.phase !== 'paused') {
+      this.world.update(dt, sim.time);
+      this.fx.update(dt);
     }
-    reverseIfWanted(p, this.input.want);
-    advance(p, PLAYER_SPEED * dt, (e) =>
-      choosePlayerDir(e, this.input.want, (x, y) => this.maze.isOpen(x, y))
-    );
+    this.syncCar(dt);
+    this.ui.hud.update(sim);
+    if (this.shake > 0) this.shake -= dt;
+    this.stage.render(dt, posX(sim.player), posY(sim.player), Math.max(0, this.shake) * 0.5);
   }
 
   private syncCar(dt: number): void {
+    const { sim } = this;
     const g = this.car.group;
-    g.position.set(wx(posX(this.player)), 0, wz(posY(this.player)));
-    this.heading = lerpAngle(this.heading, faceAngle(this.player.fx, this.player.fy), 1 - Math.exp(-16 * dt));
+    g.position.set(wx(posX(sim.player)), 0, wz(posY(sim.player)));
+    if (sim.phase === 'dying') {
+      // spin and shrink away
+      g.rotation.y += dt * 14;
+      g.scale.setScalar(Math.max(0.01, 1 - Math.min(1, sim.stateT / 0.9)));
+      return;
+    }
+    this.heading = lerpAngle(this.heading, faceAngle(sim.player.fx, sim.player.fy), 1 - Math.exp(-16 * dt));
     g.rotation.y = this.heading;
   }
 }

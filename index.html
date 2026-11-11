@@ -8,24 +8,53 @@
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
-    <header class="bar">
+    <header class="hud">
       <h1 class="brand">
         <span class="brand-zh" data-i18n="app.title"></span>
         <span class="brand-en" data-i18n="app.subtitle"></span>
       </h1>
-      <div class="lab-bar" aria-label="Debug controls">
-        <label>Level <input id="level" type="number" min="1" max="99" value="1" /></label>
-        <label>Code <input id="code" type="text" maxlength="12" placeholder="RALLY7" /></label>
-        <label class="check"><input id="bonus" type="checkbox" /> Bonus</label>
-        <label><select id="view"></select></label>
-        <label
-          ><span data-i18n="app.language"></span>
-          <select id="lang"></select
-        ></label>
+      <dl class="stats">
+        <div class="stat">
+          <dt data-i18n="hud.score"></dt>
+          <dd id="score">000000</dd>
+        </div>
+        <div class="stat">
+          <dt data-i18n="hud.hi"></dt>
+          <dd id="hi">000000</dd>
+        </div>
+        <div class="stat">
+          <dt data-i18n="hud.level"></dt>
+          <dd id="level">1</dd>
+        </div>
+        <div class="stat">
+          <dt data-i18n="hud.combo"></dt>
+          <dd id="combo">×1</dd>
+        </div>
+        <div class="stat">
+          <dt data-i18n="hud.lives"></dt>
+          <dd id="lives" class="lives"></dd>
+        </div>
+        <div class="stat">
+          <dt data-i18n="hud.gems"></dt>
+          <dd id="gemsLeft">0</dd>
+        </div>
+        <div class="stat">
+          <dt data-i18n="hud.time"></dt>
+          <dd id="timeEl">0:00.0</dd>
+        </div>
+      </dl>
+      <div class="fuel">
+        <span class="fuel-label" data-i18n="hud.fuel"></span>
+        <div class="fuel-track" id="fuelTrack"><div class="fuel-fill" id="fuelFill"></div></div>
       </div>
     </header>
+    <div class="debug" id="debug" hidden>
+      <span>DEV</span>
+      <label>Level <input id="level" type="number" min="1" max="99" value="1" /></label>
+      <label>Code <input id="code" type="text" maxlength="12" placeholder="RALLY7" /></label>
+    </div>
     <main class="stage" id="stage" tabindex="0">
-      <canvas id="gl" aria-label="Maze"></canvas>
+      <canvas id="gl" aria-label="Game"></canvas>
       <div class="banner" id="banner" hidden></div>
     </main>
     <footer class="foot">
@@ -36,7 +65,14 @@
           <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>
           <span data-i18n="keys.drive"></span>
         </span>
+        <span><kbd>P</kbd> <span data-i18n="keys.pause"></span></span>
+        <span><kbd>V</kbd> <span data-i18n="keys.view"></span></span>
       </p>
+      <div class="tools">
+        <button type="button" id="btnView"></button>
+        <button type="button" id="btnPause"></button>
+        <button type="button" id="btnLang"></button>
+      </div>
       <div class="touch" id="touch">
         <div class="dpad">
           <button type="button" class="pad up" data-dir="up" aria-label="Up">
