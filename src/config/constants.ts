@@ -24,3 +24,6 @@ export const DIRS = {
 } as const satisfies Record<string, Vec>;
 export type DirName = keyof typeof DIRS;
 export const DIR_LIST: readonly Vec[] = [DIRS.up, DIRS.down, DIRS.left, DIRS.right];
+
+/** Sedan speed in tiles per second; other cars override this once the garage lands. */
+export const PLAYER_SPEED = 5.3;
