@@ -5,13 +5,15 @@ const KEY_BUFFER = 0.4;
 const SWIPE_BUFFER = 0.7;
 
 /**
- * Turns raw presses (keys, d-pad, swipes) into one "wanted" direction. The last key held wins;
- * a tap is remembered briefly so the car turns at the next junction.
+ * Turns raw presses (keys, d-pad, swipes) into one "wanted" direction, plus the smoke button.
+ * The last key held wins; a tap is remembered briefly so the car turns at the next junction.
  */
-export class DirectionInput {
+export class PlayerInput {
   private readonly held: DirName[] = [];
   private current: Vec | null = null;
   private timer = 0;
+  /** True while the exhaust button (Space / on-screen) is held. */
+  smoke = false;
 
   get want(): Vec | null {
     return this.current;
@@ -53,5 +55,6 @@ export class DirectionInput {
     this.held.length = 0;
     this.current = null;
     this.timer = 0;
+    this.smoke = false;
   }
 }

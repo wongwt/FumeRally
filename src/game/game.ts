@@ -1,6 +1,6 @@
 import { START } from '../config/constants';
 import { faceAngle, lerpAngle } from '../core/math';
-import { DirectionInput } from '../input/directionInput';
+import { PlayerInput } from '../input/playerInput';
 import { makeSedan } from '../render/carModel';
 import type { ViewMode } from '../render/cameraRig';
 import { wx, wz } from '../render/coords';
@@ -29,7 +29,7 @@ export interface GameUi {
 /** Glue between the simulation, the 3D stage, input and the UI. */
 export class Game {
   readonly sim = new Sim();
-  readonly input = new DirectionInput();
+  readonly input = new PlayerInput();
   private readonly car = makeSedan(COL.player, true);
   private readonly world: WorldView;
   private readonly fx: Fx;

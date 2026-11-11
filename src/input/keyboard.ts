@@ -1,5 +1,5 @@
 import type { DirName } from '../config/constants';
-import type { DirectionInput } from './directionInput';
+import type { PlayerInput } from './playerInput';
 
 export const KEY_DIR: Record<string, DirName> = {
   ArrowUp: 'up',
@@ -26,7 +26,7 @@ function isTyping(el: EventTarget | null): boolean {
 }
 
 /** Wires arrow keys / WASD to the direction input and the other keys to game actions. */
-export function bindKeyboard(input: DirectionInput, actions: KeyActions): void {
+export function bindKeyboard(input: PlayerInput, actions: KeyActions): void {
   window.addEventListener('keydown', (e) => {
     if (isTyping(e.target)) return;
     const dir = KEY_DIR[e.code];

@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { DIRS } from '../src/config/constants';
-import { DirectionInput } from '../src/input/directionInput';
+import { PlayerInput } from '../src/input/playerInput';
 
-describe('DirectionInput', () => {
+describe('PlayerInput', () => {
   it('uses the most recently pressed key', () => {
-    const i = new DirectionInput();
+    const i = new PlayerInput();
     i.press('up');
     i.press('left');
     i.update(0.016);
@@ -12,7 +12,7 @@ describe('DirectionInput', () => {
   });
 
   it('falls back to the previous held key on release', () => {
-    const i = new DirectionInput();
+    const i = new PlayerInput();
     i.press('up');
     i.press('left');
     i.release('left');
@@ -20,7 +20,7 @@ describe('DirectionInput', () => {
   });
 
   it('remembers a tap briefly so the car turns at the next junction', () => {
-    const i = new DirectionInput();
+    const i = new PlayerInput();
     i.press('right');
     i.release('right');
     i.update(0.3);
@@ -30,14 +30,14 @@ describe('DirectionInput', () => {
   });
 
   it('keeps a held key alive indefinitely', () => {
-    const i = new DirectionInput();
+    const i = new PlayerInput();
     i.press('down');
     for (let n = 0; n < 100; n++) i.update(0.1);
     expect(i.want).toBe(DIRS.down);
   });
 
   it('swipes expire after a longer buffer', () => {
-    const i = new DirectionInput();
+    const i = new PlayerInput();
     i.swipe('up');
     i.update(0.6);
     expect(i.want).toBe(DIRS.up);
@@ -46,7 +46,7 @@ describe('DirectionInput', () => {
   });
 
   it('clear forgets held keys', () => {
-    const i = new DirectionInput();
+    const i = new PlayerInput();
     i.press('up');
     i.clear();
     i.update(0.016);

@@ -1,11 +1,11 @@
 import type { DirName } from '../config/constants';
-import type { DirectionInput } from './directionInput';
+import type { PlayerInput } from './playerInput';
 
 const SWIPE_DISTANCE = 24;
 
 /** Swipe on the stage and on-screen d-pad buttons (`<button data-dir="up|down|left|right">`). */
 export function bindTouch(
-  input: DirectionInput,
+  input: PlayerInput,
   stage: HTMLElement,
   /** Called for a tap or click on the stage (start, resume). */
   onTap: () => void,
