@@ -46,3 +46,18 @@ export const MAX_COMBO = 5;
 export const GEM_POINTS = 100;
 /** Points per remaining fuel unit on a level clear. */
 export const FUEL_BONUS = 10;
+
+/** Smoke: fuel per puff, delay between puffs, how long a cloud lives and how far it reaches. */
+export const PUFF_COST = 3.5;
+export const PUFF_COOLDOWN = 0.36;
+export const PUFF_DROP_DISTANCE = 0.8;
+export const CLOUD_LIFE = 1.5;
+/** A cloud only stuns while it is young and dense. */
+export const CLOUD_STUN_AGE = 1.2;
+export const CLOUD_RADIUS = 1.05;
+export const STUN_TIME = 3.0;
+/** Grace period after a stun ends, so one cloud cannot chain-stun forever. */
+export const STUN_IMMUNITY = 1.0;
+export const STUN_POINTS = 50;
+/** Player and chaser collide when closer than this many tiles. */
+export const HIT_RADIUS = 0.62;
