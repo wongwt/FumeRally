@@ -38,6 +38,7 @@ src/
   game/     glue between sim, render and input
   render/   Three.js scene, maze/world meshes, effects and camera rig
   ui/       HUD, banners and floating popups
+  audio/    synthesised sound effects (Web Audio, no asset files) and mute setting
   i18n/     message tables (zh-TW, en) and the t() lookup
 tests/      Vitest unit tests
 ```
