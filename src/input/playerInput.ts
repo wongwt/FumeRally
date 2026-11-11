@@ -12,8 +12,24 @@ export class PlayerInput {
   private readonly held: DirName[] = [];
   private current: Vec | null = null;
   private timer = 0;
-  /** True while the exhaust button (Space / on-screen) is held. */
-  smoke = false;
+  private smokeHeld = false;
+  private smokePressed = false;
+
+  /** Exhaust button (Space / on-screen) went down or up. */
+  setSmoke(down: boolean): void {
+    this.smokeHeld = down;
+    if (down) this.smokePressed = true;
+  }
+
+  /**
+   * True if the exhaust button is held, or was pressed since the last call. The latch means a
+   * quick tap shorter than one simulation step still drops a puff.
+   */
+  takeSmoke(): boolean {
+    const on = this.smokeHeld || this.smokePressed;
+    this.smokePressed = false;
+    return on;
+  }
 
   get want(): Vec | null {
     return this.current;
@@ -55,6 +71,7 @@ export class PlayerInput {
     this.held.length = 0;
     this.current = null;
     this.timer = 0;
-    this.smoke = false;
+    this.smokeHeld = false;
+    this.smokePressed = false;
   }
 }

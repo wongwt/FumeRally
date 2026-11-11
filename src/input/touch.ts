@@ -3,7 +3,7 @@ import type { PlayerInput } from './playerInput';
 
 const SWIPE_DISTANCE = 24;
 
-/** Swipe on the stage and on-screen d-pad buttons (`<button data-dir="up|down|left|right">`). */
+/** Swipe on the stage, the on-screen d-pad (`data-dir`) and the exhaust button (`data-smoke`). */
 export function bindTouch(
   input: PlayerInput,
   stage: HTMLElement,
@@ -53,4 +53,19 @@ export function bindTouch(
       });
     }
   });
+
+  const smokeBtn = root.querySelector<HTMLElement>('[data-smoke]');
+  if (smokeBtn) {
+    smokeBtn.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      input.setSmoke(true);
+      smokeBtn.classList.add('active');
+    });
+    for (const type of ['pointerup', 'pointercancel', 'pointerleave']) {
+      smokeBtn.addEventListener(type, () => {
+        input.setSmoke(false);
+        smokeBtn.classList.remove('active');
+      });
+    }
+  }
 }

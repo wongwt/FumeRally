@@ -13,8 +13,8 @@ export const KEY_DIR: Record<string, DirName> = {
 };
 
 export interface KeyActions {
-  /** Space or Enter: start a game, resume from pause. */
-  confirm(): void;
+  /** Space or Enter: start a game or resume from pause. Returns true if it did either. */
+  confirm(): boolean;
   /** P or Escape. */
   pause(): void;
   /** V. */
@@ -36,13 +36,16 @@ export function bindKeyboard(input: PlayerInput, actions: KeyActions): void {
       return;
     }
     if (e.repeat) return;
-    if (e.code === 'Space' || e.code === 'Enter') actions.confirm();
-    else if (e.code === 'KeyP' || e.code === 'Escape') actions.pause();
+    if (e.code === 'Space' || e.code === 'Enter') {
+      // Space doubles as the exhaust button, but not on the press that starts or resumes a game.
+      if (!actions.confirm() && e.code === 'Space') input.setSmoke(true);
+    } else if (e.code === 'KeyP' || e.code === 'Escape') actions.pause();
     else if (e.code === 'KeyV') actions.toggleView();
   });
   window.addEventListener('keyup', (e) => {
     const dir = KEY_DIR[e.code];
     if (dir) input.release(dir);
+    else if (e.code === 'Space') input.setSmoke(false);
   });
   window.addEventListener('blur', () => input.clear());
 }

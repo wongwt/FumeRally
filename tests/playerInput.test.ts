@@ -45,6 +45,31 @@ describe('PlayerInput', () => {
     expect(i.want).toBeNull();
   });
 
+  it('reports the exhaust button while held', () => {
+    const i = new PlayerInput();
+    expect(i.takeSmoke()).toBe(false);
+    i.setSmoke(true);
+    expect(i.takeSmoke()).toBe(true);
+    expect(i.takeSmoke()).toBe(true);
+    i.setSmoke(false);
+    expect(i.takeSmoke()).toBe(false);
+  });
+
+  it('a tap shorter than a simulation step still counts once', () => {
+    const i = new PlayerInput();
+    i.setSmoke(true);
+    i.setSmoke(false);
+    expect(i.takeSmoke()).toBe(true);
+    expect(i.takeSmoke()).toBe(false);
+  });
+
+  it('clear forgets held keys and the exhaust button', () => {
+    const i = new PlayerInput();
+    i.setSmoke(true);
+    i.clear();
+    expect(i.takeSmoke()).toBe(false);
+  });
+
   it('clear forgets held keys', () => {
     const i = new PlayerInput();
     i.press('up');
