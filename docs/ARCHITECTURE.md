@@ -41,12 +41,13 @@ and the UI redraws its banner from that.
 The simulation runs on a **fixed 120 Hz timestep** (`sim/stepper.ts`), so gameplay does not depend on the
 display's refresh rate. Rendering runs once per animation frame and uses the latest state.
 
-## Determinism and PoC parity
+## Determinism
 
-Maps, gem and rock layouts, rainbow-gem order and daily codes are pure functions of a seed. The formulas
-come from the original single-file prototype and **must not change**: level codes, best times and ghosts
-that players share or saved depend on them. Tests under `tests/fixtures/poc-*.json` pin the output against
-values captured from the prototype. Chaser decisions use `Math.random` (as in the prototype); tests inject a
+Maps, gem and rock layouts, rainbow-gem order and daily codes are pure functions of a seed and the level.
+Mazes grow and get twistier with the level (`mazeSpec` in `core/maze.ts`: size steps, loop chance and
+winding), so a level's size is part of its identity. Since v0.2 these formulas no longer match the original
+prototype; daily and level-code _hashing_ still does (`tests/fixtures/poc-challenge.json`). Changing the
+generator again invalidates players' ghosts, so bump the ghost storage key when you do. Chaser decisions use `Math.random` (as in the prototype); tests inject a
 seeded generator through `sim.rand`.
 
 ## Rendering notes
@@ -63,7 +64,7 @@ seeded generator through `sim.rand`.
 | Key                                               | Contents                                                                                                       |
 | ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
 | `fumeRallyRec`                                    | version `v`, best score, stages cleared, car-unlock progress, leaderboards, best times, achievements, counters |
-| `fumeRallyGhosts`                                 | best run per stage (newest 30 kept)                                                                            |
+| `fumeRallyGhosts2`                                | best run per stage (newest 30 kept)                                                                            |
 | `fumeRallyChallenge`                              | mode, last custom code, ghost toggle, selected car                                                             |
 | `fumeRallyView`, `fumeRallyMute`, `fumeRallyLang` | camera view, sound, language                                                                                   |
 

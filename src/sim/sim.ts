@@ -44,9 +44,9 @@ import {
   ROWS,
   type Vec
 } from '../config/constants';
-import { CARS, type CarDef, type CarId } from '../config/cars';
+import { CARS, levelSpeedFactor, type CarDef, type CarId } from '../config/cars';
 import { Emitter } from '../core/events';
-import { buildMaze, mazeSeed, type Maze } from '../core/maze';
+import { buildMaze, mazeSeed, mazeSpec, type Maze } from '../core/maze';
 import { Pathfinder } from '../core/pathfinding';
 import {
   type ChaseContext,
@@ -162,7 +162,7 @@ export class Sim {
   crashWhy: CrashReason = 'rock';
   newRecord = false;
 
-  maze: Maze = buildMaze(mazeSeed(1, 0, false));
+  maze: Maze = buildMaze(mazeSeed(1, 0, false), mazeSpec(1));
   gems: Gem[] = [];
   rocks: Rock[] = [];
   readonly enemies = createEnemies();
@@ -184,12 +184,11 @@ export class Sim {
   /** Source of randomness for chaser decisions; tests replace it with a seeded one. */
   rand: () => number = Math.random;
   private smokeCd = 0;
-  private readonly rockGrid = new Uint8Array(COLS * ROWS);
-  private readonly pathfinder = new Pathfinder(COLS, ROWS);
+  private rockGrid = new Uint8Array(COLS * ROWS);
   private readonly chase: ChaseContext = {
     player: this.player,
     isOpen: (x, y) => this.isOpenForChasers(x, y),
-    pathfinder: this.pathfinder,
+    pathfinder: new Pathfinder(COLS, ROWS),
     rand: () => this.rand()
   };
 
@@ -217,7 +216,7 @@ export class Sim {
   setCar(id: CarId): void {
     this.car = CARS[id];
     this.carId = id;
-    this.speed = this.car.speed;
+    this.speed = this.car.speed * levelSpeedFactor(this.level);
     this.drain = this.car.drain;
   }
 
@@ -225,12 +224,12 @@ export class Sim {
   setRocks(rocks: Rock[]): void {
     this.rocks = rocks;
     this.rockGrid.fill(0);
-    for (const r of rocks) if (!r.broken) this.rockGrid[r.y * COLS + r.x] = 1;
+    for (const r of rocks) if (!r.broken) this.rockGrid[r.y * this.maze.cols + r.x] = 1;
   }
 
   /** Chasers can use corridors, but not tiles with a rock on them. */
   isOpenForChasers(x: number, y: number): boolean {
-    return this.maze.isOpen(x, y) && !this.rockGrid[y * COLS + x];
+    return this.maze.isOpen(x, y) && !this.rockGrid[y * this.maze.cols + x];
   }
 
   get gemsLeft(): number {
@@ -260,10 +259,15 @@ export class Sim {
   loadLevel(level: number, bonus: boolean): void {
     this.level = level;
     this.bonus = bonus;
-    this.maze = buildMaze(mazeSeed(level, this.challengeSeed, bonus));
+    this.maze = buildMaze(mazeSeed(level, this.challengeSeed, bonus), mazeSpec(level));
+    if (this.chase.pathfinder.cols !== this.maze.cols || this.chase.pathfinder.rows !== this.maze.rows) {
+      this.chase.pathfinder = new Pathfinder(this.maze.cols, this.maze.rows);
+    }
+    this.rockGrid = new Uint8Array(this.maze.cols * this.maze.rows);
+    this.speed = this.car.speed * levelSpeedFactor(level);
     this.setRocks(spawnRocks(this.maze, level, this.challengeSeed, bonus));
     this.gems = spawnGems(level, this.challengeSeed, bonus);
-    configureEnemies(this.enemies, level, bonus);
+    configureEnemies(this.enemies, level, bonus, this.maze.homes);
     this.special = null;
     this.specialT = SPECIAL_FIRST;
     this.specialIdx = 0;
@@ -338,7 +342,7 @@ export class Sim {
   }
 
   private resetActors(): void {
-    resetPlayer(this.player, this.maze, START.x, START.y);
+    resetPlayer(this.player, this.maze, this.maze.start.x, this.maze.start.y);
     resetEnemies(this.enemies);
     this.clouds = [];
     this.smokeCd = 0;
@@ -494,7 +498,7 @@ export class Sim {
   /** Smashes a rock: it disappears and stops blocking chasers. */
   private breakRock(r: Rock, crush: boolean): void {
     r.broken = true;
-    this.rockGrid[r.y * COLS + r.x] = 0;
+    this.rockGrid[r.y * this.maze.cols + r.x] = 0;
     this.addScore(ROCK_POINTS);
     this.events.emit('rockSmashed', { rock: r, points: ROCK_POINTS, crush });
   }

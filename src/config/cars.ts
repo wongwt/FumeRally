@@ -47,6 +47,13 @@ export const CAR_ORDER: readonly CarId[] = [
   'moto'
 ];
 
+/**
+ * Every car starts a run a little slower and works up to its rated speed: ×0.85 on level 1,
+ * +0.02 per level, full speed from level 9.
+ */
+export const levelSpeedFactor = (level: number): number =>
+  Math.min(1, 0.85 + 0.02 * (Math.max(1, level) - 1));
+
 export const isCarId = (v: unknown): v is CarId => typeof v === 'string' && v in CARS;
 
 export const carUnlocked = (id: CarId, carLv: number): boolean => carLv >= CARS[id].unlock;

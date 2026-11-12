@@ -1,5 +1,5 @@
-import { COLS, HOMES, ROWS, START, type Vec } from '../config/constants';
-import type { Maze } from '../core/maze';
+import { layoutFor, type Vec } from '../config/constants';
+import { mazeSpec, type Maze } from '../core/maze';
 import { Pathfinder } from '../core/pathfinding';
 import { mulberry32, shuffle } from '../core/rng';
 
@@ -23,7 +23,11 @@ export interface Rock {
   broken: boolean;
 }
 
-const pathfinder = new Pathfinder(COLS, ROWS);
+/** Tile size of the maze a level uses (the maze itself is built from the same spec). */
+function dimsFor(level: number): { cols: number; rows: number } {
+  const { cw, ch } = mazeSpec(level);
+  return { cols: 2 * cw + 1, rows: 2 * ch + 1 };
+}
 
 /** Level-specific seed offset, kept identical to the PoC so maps and codes stay compatible. */
 const seedFor = (mul: number, add: number, level: number, challengeSeed: number, bonus: boolean): number =>
@@ -35,6 +39,8 @@ export const rockCount = (level: number, bonus: boolean): number => (bonus ? 0 :
 /** Gems sit on cell centres, away from the start and the chasers' homes. */
 export function spawnGems(level: number, challengeSeed: number, bonus: boolean): Gem[] {
   const rand = mulberry32(seedFor(3571, 99, level, challengeSeed, bonus));
+  const { cols: COLS, rows: ROWS } = dimsFor(level);
+  const { start: START, homes: HOMES } = layoutFor(COLS, ROWS);
   const cells: { x: number; y: number }[] = [];
   for (let y = 1; y < ROWS; y += 2) {
     for (let x = 1; x < COLS; x += 2) {
@@ -59,6 +65,13 @@ export function spawnGems(level: number, challengeSeed: number, bonus: boolean):
  */
 export function spawnRocks(maze: Maze, level: number, challengeSeed: number, bonus: boolean): Rock[] {
   const rand = mulberry32(seedFor(1231, 7, level, challengeSeed, bonus));
+  const {
+    cols: COLS,
+    rows: ROWS,
+    start: START,
+    homes: HOMES
+  } = { cols: maze.cols, rows: maze.rows, ...maze.layout };
+  const pathfinder = new Pathfinder(COLS, ROWS);
   const rocks: Rock[] = [];
   const blocked = new Uint8Array(COLS * ROWS);
   const isFree = (x: number, y: number): boolean => maze.isOpen(x, y) && !blocked[y * COLS + x];
@@ -106,6 +119,7 @@ export function spawnRocks(maze: Maze, level: number, challengeSeed: number, bon
  */
 export function specialOrder(level: number, challengeSeed: number): Vec[] {
   const rand = mulberry32((level * 9173 + 31 + challengeSeed * 40503) >>> 0);
+  const { cols: COLS, rows: ROWS } = dimsFor(level);
   const cells: Vec[] = [];
   for (let y = 1; y < ROWS; y += 2) for (let x = 1; x < COLS; x += 2) cells.push({ x, y });
   return shuffle(cells, rand);

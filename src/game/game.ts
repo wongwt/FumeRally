@@ -1,5 +1,5 @@
 import { CARS, carUnlocked, isCarId, unlockedCars, type CarId } from '../config/cars';
-import { START, type DirName } from '../config/constants';
+import type { DirName } from '../config/constants';
 import { normCode, type ChallengeMode } from '../core/challenge';
 import { PlayerInput } from '../input/playerInput';
 import type { ViewMode } from '../render/cameraRig';
@@ -414,7 +414,7 @@ export class Game {
     this.ui.radar.setMaze(this.sim.maze);
     this.fx.clear();
     this.smokeView.clear();
-    this.stage.rig.snapTo(START.x, START.y);
+    this.stage.rig.snapTo(this.sim.maze.start.x, this.sim.maze.start.y);
   }
 
   /** A little way into the clear screen, announce a newly unlocked car and hold the screen until it is closed. */

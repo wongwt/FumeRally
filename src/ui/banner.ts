@@ -143,7 +143,7 @@ function recordsHtml(ctx: ScreenContext): string {
 
 function titleHtml(ctx: ScreenContext): string {
   return (
-    `<p class="eyebrow">${t('app.subtitle')}</p><h2>${t('app.title')}</h2>` +
+    `${t('app.subtitle') ? `<p class="eyebrow">${t('app.subtitle')}</p>` : ''}<h2>${t('app.title')}</h2>` +
     `<p class="lead intro">${t('title.lead')}</p>` +
     `<ul class="legend"><li>${kbd('↑', '↓', '←', '→')} ${t('keys.or')} ${kbd('W', 'A', 'S', 'D')} ${t('title.drive')}</li>` +
     `<li>${spaceKey()} ${t('title.smoke')}&emsp;${kbd('V')} ${t('keys.view')}</li>` +

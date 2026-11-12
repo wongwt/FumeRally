@@ -1,8 +1,7 @@
 import * as THREE from 'three';
-import { COLS, ROWS } from '../config/constants';
 import type { Maze } from '../core/maze';
 import { COL } from './palette';
-import { wx, wz } from './coords';
+import { setGridSize, wx, wz } from './coords';
 
 const wallGeo = new THREE.BoxGeometry(1, 0.6, 1);
 const capGeo = new THREE.BoxGeometry(0.88, 0.06, 0.88);
@@ -17,10 +16,11 @@ export function buildMazeMeshes(group: THREE.Group, maze: Maze): void {
     group.remove(m);
     if (m instanceof THREE.InstancedMesh) m.dispose();
   }
+  setGridSize(maze.cols, maze.rows);
   const walls: [number, number][] = [];
   const lanes: [number, number][] = [];
-  for (let y = 0; y < ROWS; y++)
-    for (let x = 0; x < COLS; x++) (maze.isOpen(x, y) ? lanes : walls).push([x, y]);
+  for (let y = 0; y < maze.rows; y++)
+    for (let x = 0; x < maze.cols; x++) (maze.isOpen(x, y) ? lanes : walls).push([x, y]);
 
   const wallMesh = new THREE.InstancedMesh(wallGeo, wallMat, walls.length);
   const capMesh = new THREE.InstancedMesh(capGeo, capMat, walls.length);

@@ -56,6 +56,7 @@ describe('i18n', () => {
 
   it('English provides exactly the same keys as zh-TW', () => {
     expect(Object.keys(en).sort()).toEqual(Object.keys(zhTW).sort());
-    for (const v of Object.values(en)) expect(v.trim()).not.toBe('');
+    // the English UI has no subtitle: the title already says "Fume Rally"
+    for (const [k, v] of Object.entries(en)) if (k !== 'app.subtitle') expect(v.trim()).not.toBe('');
   });
 });

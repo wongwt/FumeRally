@@ -1,10 +1,11 @@
-import { COLS, DIR_LIST, HOMES, type Vec } from '../config/constants';
+import { DIR_LIST, HOMES, type Vec } from '../config/constants';
 import type { Pathfinder } from '../core/pathfinding';
 import { createMover, posX, posY, type Mover } from './movement';
 
 /** A red chaser. Extends the grid mover with AI personality and its stun / release timers. */
 export interface Enemy extends Mover {
-  readonly home: Vec;
+  /** Where it lives; moved to the level's layout when a level loads. */
+  home: Vec;
   active: boolean;
   /** Tiles per second. */
   speed: number;
@@ -40,10 +41,16 @@ export function createEnemies(): Enemy[] {
 export const enemyCount = (level: number): number => Math.min(5, 2 + Math.ceil((level - 1) / 2));
 export const enemyBaseSpeed = (level: number): number => Math.min(4.9, 3.6 + 0.22 * level);
 
-export function configureEnemies(enemies: Enemy[], level: number, bonus: boolean): void {
+export function configureEnemies(
+  enemies: Enemy[],
+  level: number,
+  bonus: boolean,
+  homes: readonly Vec[] = HOMES
+): void {
   const n = enemyCount(level);
   const base = enemyBaseSpeed(level);
   enemies.forEach((en, i) => {
+    en.home = homes[i] ?? en.home;
     en.active = !bonus && i < n;
     en.speed = base * (0.97 + 0.03 * (i % 2));
     en.mode = i % 3;
@@ -115,7 +122,7 @@ export function chooseEnemyDir(en: Enemy, ctx: ChaseContext): void {
     let best = Infinity;
     let bests: Vec[] = [];
     for (const d of list) {
-      const v = dist[(en.ty + d.y) * COLS + en.tx + d.x] as number;
+      const v = dist[(en.ty + d.y) * ctx.pathfinder.cols + en.tx + d.x] as number;
       if (v < best) {
         best = v;
         bests = [d];

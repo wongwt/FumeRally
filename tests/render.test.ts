@@ -65,10 +65,19 @@ describe('CameraRig', () => {
   it('follow view shows a smaller window that scales with viewScale', () => {
     const rig = new CameraRig();
     rig.resize(1280, 720);
-    expect(rig.halfH).toBeCloseTo(5.6);
+    expect(rig.halfH).toBeCloseTo(3.6);
     expect(rig.halfW).toBeLessThan(COLS / 2);
     rig.setViewScale(1.3);
-    expect(rig.halfH).toBeCloseTo(5.6 * 1.3);
+    expect(rig.halfH).toBeCloseTo(3.6 * 1.3);
+  });
+
+  it('frames whatever maze size the level has', () => {
+    const rig = new CameraRig();
+    rig.setGrid(19, 13);
+    rig.resize(1280, 720);
+    expect(rig.halfH).toBeCloseTo(3.6);
+    rig.setView('full');
+    expect([rig.halfW, rig.halfH]).toEqual([19 / 2, 13 / 2]);
   });
 
   it('follow view falls back to the full maze on very wide stages', () => {

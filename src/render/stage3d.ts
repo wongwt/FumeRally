@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { COLS, ROWS } from '../config/constants';
 import type { Maze } from '../core/maze';
 import { CameraRig } from './cameraRig';
 import { buildMazeMeshes } from './mazeMeshes';
@@ -33,7 +32,7 @@ export class Stage3D {
     this.scene.add(sun);
 
     const floor = new THREE.Mesh(
-      new THREE.PlaneGeometry(COLS + 4, ROWS + 4).rotateX(-Math.PI / 2),
+      new THREE.PlaneGeometry(40, 30).rotateX(-Math.PI / 2),
       new THREE.MeshLambertMaterial({ color: COL.floor })
     );
     floor.position.y = -0.01;
@@ -47,6 +46,7 @@ export class Stage3D {
 
   setMaze(maze: Maze): void {
     buildMazeMeshes(this.mazeGroup, maze);
+    this.rig.setGrid(maze.cols, maze.rows);
   }
 
   resize(): void {

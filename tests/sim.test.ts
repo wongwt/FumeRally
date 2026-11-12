@@ -273,9 +273,9 @@ describe('driving', () => {
 });
 
 describe('chasers', () => {
-  /** Level 1 with one chaser released next to the player and everything else quiet. */
+  /** Level 9 (27 × 19) with one chaser released next to the player and everything else quiet. */
   function chased(): Sim {
-    const sim = playing([gem(1, 1)]);
+    const sim = playing([gem(1, 1)], [], 'sedan', 9);
     sim.rand = mulberry32(5);
     const en = sim.enemies[0] as Enemy;
     en.active = true;
@@ -451,6 +451,6 @@ describe('exhaust smoke', () => {
       expect(sim.isOpenForChasers(r.x, r.y)).toBe(false);
     }
     sim.setRocks([]);
-    expect(sim.isOpenForChasers(13, 17)).toBe(true);
+    expect(sim.isOpenForChasers(sim.maze.start.x, sim.maze.start.y)).toBe(true);
   });
 });

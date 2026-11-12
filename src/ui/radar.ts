@@ -1,10 +1,9 @@
-import { COLS, ROWS } from '../config/constants';
 import type { Maze } from '../core/maze';
 import type { CameraRig } from '../render/cameraRig';
 import { posX, posY } from '../sim/movement';
 import type { Sim } from '../sim/sim';
 
-/** Pixels per tile on the radar canvas (216 × 152 for a 27 × 19 maze). */
+/** Pixels per tile on the radar canvas (the canvas follows the maze size). */
 const RT = 8;
 
 /** Full-map overview shown beside the stage while the camera follows the car. */
@@ -12,20 +11,25 @@ export class Radar {
   private readonly ctx: CanvasRenderingContext2D | null;
   private readonly walls = document.createElement('canvas');
 
-  constructor(canvas: HTMLCanvasElement) {
-    canvas.width = COLS * RT;
-    canvas.height = ROWS * RT;
+  private cols = 0;
+  private rows = 0;
+
+  constructor(private readonly canvas: HTMLCanvasElement) {
     this.ctx = canvas.getContext('2d');
-    this.walls.width = COLS * RT;
-    this.walls.height = ROWS * RT;
   }
 
   /** Pre-renders the walls of a new level. */
   setMaze(maze: Maze): void {
+    this.cols = maze.cols;
+    this.rows = maze.rows;
+    for (const cv of [this.canvas, this.walls]) {
+      cv.width = maze.cols * RT;
+      cv.height = maze.rows * RT;
+    }
     const c = this.walls.getContext('2d');
     if (!c) return;
-    for (let y = 0; y < ROWS; y++) {
-      for (let x = 0; x < COLS; x++) {
+    for (let y = 0; y < maze.rows; y++) {
+      for (let x = 0; x < maze.cols; x++) {
         c.fillStyle = maze.isOpen(x, y) ? '#0a1b27' : '#2a5c7a';
         c.fillRect(x * RT, y * RT, RT, RT);
       }
@@ -55,8 +59,8 @@ export class Radar {
     // the part of the map currently on screen
     c.strokeStyle = 'rgba(255,255,255,0.7)';
     c.lineWidth = 1;
-    const cx = rig.focus.x + COLS / 2 - 0.5;
-    const cy = rig.focus.z + ROWS / 2 - 0.5;
+    const cx = rig.focus.x + this.cols / 2 - 0.5;
+    const cy = rig.focus.z + this.rows / 2 - 0.5;
     c.strokeRect(
       (cx - rig.halfW + 0.5) * RT,
       (cy - rig.halfH + 0.5) * RT,

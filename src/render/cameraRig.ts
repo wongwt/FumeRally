@@ -5,6 +5,8 @@ import { wx, wz } from './coords';
 export type ViewMode = 'full' | 'scroll';
 
 const TILT = 0.42;
+/** Tiles visible above and below the car in follow view (scouts see further). */
+const FOLLOW_HALF_HEIGHT = 3.6;
 
 /**
  * 'full'  : the whole maze on one screen.
@@ -18,6 +20,8 @@ export class CameraRig {
   /** Half extents (in tiles) of the area currently framed. */
   halfW = COLS / 2;
   halfH = ROWS / 2;
+  private cols: number = COLS;
+  private rows: number = ROWS;
   private readonly target = new THREE.Vector3();
   private dist = 40;
   private aspect = 1;
@@ -39,6 +43,13 @@ export class CameraRig {
     this.refit();
   }
 
+  /** Sets the size of the maze being framed. Call when a level loads. */
+  setGrid(cols: number, rows: number): void {
+    this.cols = cols;
+    this.rows = rows;
+    this.refit();
+  }
+
   setViewScale(scale: number): void {
     this.viewScale = scale;
     this.refit();
@@ -46,12 +57,12 @@ export class CameraRig {
 
   /** Recomputes the framed area and camera distance after a resize or view change. */
   refit(): void {
-    this.halfW = COLS / 2;
-    this.halfH = ROWS / 2;
+    this.halfW = this.cols / 2;
+    this.halfH = this.rows / 2;
     if (this.view === 'scroll') {
-      const hh = Math.min(ROWS / 2, 5.6 * this.viewScale);
+      const hh = Math.min(this.rows / 2, FOLLOW_HALF_HEIGHT * this.viewScale);
       const hw = hh * this.aspect;
-      if (hw < COLS / 2) {
+      if (hw < this.cols / 2) {
         this.halfH = hh;
         this.halfW = hw;
       }
@@ -90,8 +101,8 @@ export class CameraRig {
     let tx = 0;
     let tz = 0;
     if (this.view === 'scroll') {
-      const mx = Math.max(0, COLS / 2 - this.halfW);
-      const mz = Math.max(0, ROWS / 2 - this.halfH);
+      const mx = Math.max(0, this.cols / 2 - this.halfW);
+      const mz = Math.max(0, this.rows / 2 - this.halfH);
       tx = Math.max(-mx, Math.min(mx, wx(tileX)));
       tz = Math.max(-mz, Math.min(mz, wz(tileY)));
     }

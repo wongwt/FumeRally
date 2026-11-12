@@ -4,6 +4,7 @@ import {
   CAR_ORDER,
   carUnlocked,
   isCarId,
+  levelSpeedFactor,
   newlyUnlockedCar,
   nextLockedCar,
   unlockedCars
@@ -80,8 +81,8 @@ describe('speed and fuel', () => {
   };
 
   it('faster cars cover more ground', () => {
-    const sedan = travelled(playing([gem(1, 1)], [], 'sedan'), 0.3);
-    const moto = travelled(playing([gem(1, 1)], [], 'moto'), 0.3);
+    const sedan = travelled(playing([gem(1, 1)], [], 'sedan', 9), 0.3);
+    const moto = travelled(playing([gem(1, 1)], [], 'moto', 9), 0.3);
     expect(moto).toBeGreaterThan(sedan);
     expect(sedan).toBeCloseTo(CARS.sedan.speed * 0.3, 0);
   });
@@ -103,7 +104,25 @@ describe('speed and fuel', () => {
   it('setCar updates the stats the sim uses', () => {
     const sim = new Sim();
     sim.setCar('sport');
-    expect([sim.carId, sim.speed, sim.drain]).toEqual(['sport', 6.3, 1.3]);
+    expect([sim.carId, sim.drain]).toEqual(['sport', 1.3]);
+    expect(sim.speed).toBeCloseTo(6.3 * levelSpeedFactor(1));
+  });
+
+  it('every car starts a run slower and reaches its rated speed as levels rise', () => {
+    expect(levelSpeedFactor(1)).toBeLessThan(0.9);
+    let prev = 0;
+    for (let lv = 1; lv <= 12; lv++) {
+      expect(levelSpeedFactor(lv)).toBeGreaterThanOrEqual(prev);
+      prev = levelSpeedFactor(lv);
+    }
+    expect(levelSpeedFactor(9)).toBe(1);
+    expect(levelSpeedFactor(40)).toBe(1);
+    const sim = new Sim();
+    sim.loadLevel(1, false);
+    const slow = sim.speed;
+    sim.loadLevel(9, false);
+    expect(sim.speed).toBeCloseTo(CARS.sedan.speed);
+    expect(slow).toBeLessThan(sim.speed);
   });
 });
 
@@ -191,7 +210,7 @@ describe('armor', () => {
 
 describe('off-road crushing', () => {
   it('smashes rocks without invincibility and without damage', () => {
-    const sim = playing([gem(1, 1)], [rock(13, 17)], 'offroad');
+    const sim = playing([gem(1, 1)], [rock(13, 17)], 'offroad', 9);
     park(sim, 13, 17);
     const smashed = vi.fn();
     sim.events.on('rockSmashed', smashed);
@@ -215,7 +234,7 @@ describe('off-road crushing', () => {
   });
 
   it('smashing under power reports crush: false', () => {
-    const sim = playing([gem(1, 1)], [rock(13, 17)], 'offroad');
+    const sim = playing([gem(1, 1)], [rock(13, 17)], 'offroad', 9);
     sim.power = 5;
     park(sim, 13, 17);
     const smashed = vi.fn();

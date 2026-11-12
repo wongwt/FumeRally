@@ -12,47 +12,26 @@ import {
   SPECIAL_RESPAWN,
   START_LIVES
 } from '../src/config/constants';
-import { fnv1a } from '../src/core/rng';
 import type { Enemy } from '../src/sim/enemies';
 import { specialOrder } from '../src/sim/spawn';
 import { DT, gem, park, place, playing, rock, run } from './helpers/sim';
-import pocSpecial from './fixtures/poc-special.json';
 
 describe('rainbow gem order', () => {
   const order = (level: number, seed = 0) => specialOrder(level, seed);
 
   it('lists every cell centre exactly once, deterministically', () => {
     const o = order(3);
-    expect(o).toHaveLength(117);
-    expect(new Set(o.map((c) => `${c.x},${c.y}`)).size).toBe(117);
+    expect(o).toHaveLength(77);
+    expect(new Set(o.map((c) => `${c.x},${c.y}`)).size).toBe(77);
     expect(o.every((c) => c.x % 2 === 1 && c.y % 2 === 1)).toBe(true);
     expect(order(3)).toEqual(o);
     expect(order(4)).not.toEqual(o);
   });
 
-  it('matches the PoC', () => {
-    const refs = pocSpecial as Record<string, { n: number; first: number[][]; hash: string }>;
-    const cases: [string, number, number][] = [
-      ['n1', 1, 0],
-      ['n2', 2, 0],
-      ['n3', 3, 0],
-      ['n7', 7, 0],
-      ['n30', 30, 0],
-      ['rally7_2', 2, fnv1a('RALLY7')]
-    ];
-    for (const [key, level, seed] of cases) {
-      const ref = refs[key];
-      expect(ref).toBeDefined();
-      if (!ref) continue;
-      const o = order(level, seed);
-      expect(o).toHaveLength(ref.n);
-      expect(o.slice(0, 6).map((c) => [c.x, c.y])).toEqual(ref.first);
-      expect(
-        fnv1a(o.map((c) => `${c.x},${c.y}`).join(';'))
-          .toString(16)
-          .padStart(8, '0')
-      ).toBe(ref.hash);
-    }
+  it('covers the whole maze of the level, which grows with the level', () => {
+    expect(order(1)).toHaveLength(9 * 6);
+    expect(order(7)).toHaveLength(13 * 9);
+    expect(order(13)).toHaveLength(15 * 10);
   });
 });
 
@@ -119,7 +98,7 @@ describe('rainbow gem appearance', () => {
 
 describe('invincibility', () => {
   const powered = (rocks = [rock(13, 17)]) => {
-    const sim = playing([gem(1, 1)], rocks);
+    const sim = playing([gem(1, 1)], rocks, 'sedan', 9);
     sim.power = POWER_TIME;
     park(sim, 13, 17);
     return sim;

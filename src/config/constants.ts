@@ -1,4 +1,7 @@
-/** Maze is COLS × ROWS tiles; cells sit on odd coordinates, walls/corridors fill the gaps. */
+/**
+ * Reference maze size in tiles, used as the default for hand-built mazes. Real levels vary in size
+ * (see `mazeSpec`); cells sit on odd coordinates, walls/corridors fill the gaps.
+ */
 export const COLS = 27;
 export const ROWS = 19;
 
@@ -7,14 +10,31 @@ export interface Vec {
   readonly y: number;
 }
 
-export const START: Vec = { x: 13, y: 17 };
-export const HOMES: readonly Vec[] = [
-  { x: 1, y: 1 },
-  { x: 25, y: 1 },
-  { x: 13, y: 1 },
-  { x: 1, y: 17 },
-  { x: 25, y: 17 }
-];
+export interface Layout {
+  /** Where the car starts: bottom middle. */
+  start: Vec;
+  /** Chaser homes: the four corners and the top middle. */
+  homes: readonly Vec[];
+}
+
+/** Start and chaser homes for a maze of `cols × rows` tiles (cols odd in cells, so the middle exists). */
+export function layoutFor(cols: number, rows: number): Layout {
+  const mid = (cols - 1) / 2; // an odd number, i.e. a cell centre, because the cell count is odd
+  return {
+    start: { x: mid, y: rows - 2 },
+    homes: [
+      { x: 1, y: 1 },
+      { x: cols - 2, y: 1 },
+      { x: mid, y: 1 },
+      { x: 1, y: rows - 2 },
+      { x: cols - 2, y: rows - 2 }
+    ]
+  };
+}
+
+const REF = layoutFor(COLS, ROWS);
+export const START: Vec = REF.start;
+export const HOMES: readonly Vec[] = REF.homes;
 
 export const DIRS = {
   up: { x: 0, y: -1 },

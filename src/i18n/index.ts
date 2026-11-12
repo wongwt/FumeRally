@@ -5,7 +5,7 @@ export type Lang = 'zh-TW' | 'en';
 export type { MessageKey };
 
 export const LANGS: readonly { id: Lang; label: string }[] = [
-  { id: 'zh-TW', label: '繁體中文' },
+  { id: 'zh-TW', label: '正體中文' },
   { id: 'en', label: 'English' }
 ];
 

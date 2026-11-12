@@ -9,7 +9,7 @@ import { DT, gem, park, place, playing, run } from './helpers/sim';
 function setup() {
   const actorGroup = new THREE.Group();
   const view = new PlayerView({ actorGroup } as unknown as Stage3D);
-  const sim = playing([gem(1, 1)]);
+  const sim = playing([gem(1, 1)], [], 'sedan', 9);
   sim.events.on('respawn', () => view.reset(sim));
   const car = actorGroup.children[0] as THREE.Group;
   const step = (seconds: number): void => {

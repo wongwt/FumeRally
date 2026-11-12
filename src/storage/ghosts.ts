@@ -3,7 +3,8 @@ import { readJson, writeJson, type StorageLike } from './storage';
 
 export type { GhostData };
 
-export const GHOSTS_KEY = 'fumeRallyGhosts';
+/** Bumped when maze layouts changed (v0.2): ghosts recorded on the old fixed-size mazes would drive through walls. */
+export const GHOSTS_KEY = 'fumeRallyGhosts2';
 const MAX_GHOSTS = 30;
 
 const isNumbers = (a: unknown): a is number[] => Array.isArray(a) && a.every((n) => Number.isFinite(n));

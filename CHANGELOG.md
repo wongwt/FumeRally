@@ -4,6 +4,20 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+
+- The Traditional Chinese language is now labelled 正體中文.
+- The English UI is just "Fume Rally", without the subtitle.
+- Mazes grow with the level: level 1 is 19 × 13 and the size steps up to 31 × 21 from level 13 (the old
+  fixed size was 27 × 19, reached on level 7).
+- Mazes get harder as levels rise: early ones are open and branchy with many shortcuts, later ones are
+  twistier with fewer loops.
+- The follow camera is zoomed in (about 7 tiles tall instead of 11) so the radar is more useful.
+- Cars start a run at 85% of their rated speed and speed up 2% per level, reaching full speed on level 9.
+- Ghosts saved by earlier versions are not loaded (their mazes no longer exist); best times are kept.
+
 ## [0.1.0] - 2026-11-12
 
 First release: a from-scratch, modular rebuild of the original single-file prototype, with the same look

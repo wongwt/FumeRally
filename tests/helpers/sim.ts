@@ -23,9 +23,10 @@ export const rock = (x: number, y: number): Rock => ({
 });
 
 /** A sim in the 'play' phase with the car parked on a known tile and a controlled set of gems. */
-export function playing(gems: Gem[] = [gem(1, 1)], rocks: Rock[] = [], car: CarId = 'sedan'): Sim {
+export function playing(gems: Gem[] = [gem(1, 1)], rocks: Rock[] = [], car: CarId = 'sedan', level = 1): Sim {
   const sim = new Sim();
   sim.setCar(car);
+  sim.startLevel = level;
   sim.startGame();
   run(sim, READY_TIME + 0.01);
   expect(sim.phase).toBe('play');
