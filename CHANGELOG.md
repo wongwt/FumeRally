@@ -4,11 +4,10 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.0.0] - 2026-11-12
 
-### Fixed
-
-- Driving into a red chaser that has not left home yet is now a crash, like any other chaser.
+The first stable release, after a round of changes based on player feedback. Level codes, maps and saved
+data are meant to stay stable from here: changing how a level is generated would be a breaking change.
 
 ### Added
 
@@ -18,23 +17,29 @@ All notable changes to this project are documented here. The format follows
 
 ### Changed
 
-- The title card no longer repeats the key cheat sheet (the footer has it); the car-drives-itself and
-  fuel notes moved into its intro text.
-- The right-hand panel is now split by moment: while driving it shows only the radar (and the car and
-  mode); on the title and game-over screens it is a tabbed menu with Garage, Mode and Board tabs and an
-  always-visible Start button; the level-code field only appears in the daily and level-code modes. The achievements block is gone from the panel (the footer button remains).
-- On phones the tabs float at the top of the stage and open a sheet over it, only on the title and game-over
-  screens. The footer "Challenges" button is removed so nothing of the menu can be hit by accident next to
-  the steering pad.
-- The Traditional Chinese language is now labelled 正體中文.
-- The English UI is just "Fume Rally", without the subtitle.
 - Mazes grow with the level: level 1 is 19 × 13 and the size steps up to 31 × 21 from level 13 (the old
   fixed size was 27 × 19, reached on level 7).
 - Mazes get harder as levels rise: early ones are open and branchy with many shortcuts, later ones are
   twistier with fewer loops.
-- The follow camera is zoomed in (about 7 tiles tall instead of 11) so the radar is more useful.
 - Cars start a run at 85% of their rated speed and speed up 2% per level, reaching full speed on level 9.
+- The follow camera is zoomed in (about 7 tiles tall instead of 11) so the radar is more useful.
+- The right-hand panel is split by moment. While driving it shows only the radar, plus the car and mode.
+  On the title and game-over screens it is a tabbed menu with Garage, Mode and Board tabs and an
+  always-visible Start button. The level-code field only appears in the daily and level-code modes, and
+  the achievements block is gone from the panel (the footer button remains).
+- On phones the tabs float at the top of the stage and open a sheet over it, only on the title and
+  game-over screens. The footer "Challenges" button is removed so nothing of the menu can be hit by
+  accident next to the steering pad.
+- The title card no longer repeats the key cheat sheet (the footer has it); the car-drives-itself and
+  fuel notes moved into its intro text.
+- The footer controls are ordered Mute, Pause, View, in both the key hints and the buttons.
+- The Traditional Chinese language is now labelled 正體中文, and the English UI is just "Fume Rally",
+  without the subtitle.
 - Ghosts saved by earlier versions are not loaded (their mazes no longer exist); best times are kept.
+
+### Fixed
+
+- Driving into a red chaser that has not left home yet is now a crash, like any other chaser.
 
 ## [0.1.0] - 2026-11-12
 
