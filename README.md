@@ -75,17 +75,9 @@ own leaderboard. Your fastest flawless clear of each stage is saved as a **ghost
 There are **32 achievements** to collect: seven stage trophies and 25 for everything from your first
 crash to a ten-thousand-point run.
 
-## Screenshots
-
-| Title screen                                | Achievements                                       |
-| ------------------------------------------- | -------------------------------------------------- |
-| ![Title screen](docs/screenshots/title.jpg) | ![Achievements](docs/screenshots/achievements.jpg) |
-
-<p align="center"><img src="docs/screenshots/mobile.jpg" alt="Playing on a phone" width="260"></p>
-
 ## Features
 
-- Seeded, symmetric mazes; the same level or code always plays the same.
+- Seeded, symmetric mazes that start small and open and grow twistier with the level; the same level or code always plays the same.
 - Eight cars with their own 3D models and abilities, and 32 achievements.
 - Daily challenge, shareable level codes, per-board leaderboards, flawless best times and ghost replay.
 - Full-map radar, follow and full-map cameras, screen shake (off with reduced-motion), floating score pop-ups.
@@ -113,19 +105,19 @@ The build output is one HTML file with all code, styles and the pixel font inlin
 double-clicking it.
 
 ```
+docs/       architecture notes and the screenshot
 src/
-  config/   constants, car definitions, achievement definitions
-  core/     pure, tested logic (RNG, maze generation, pathfinding, challenge codes, events)
-  sim/      the game rules: movement, chasers, fuel, gems, power-ups, phases (no DOM, no Three.js)
-  input/    keyboard, swipe and on-screen pad → one wanted direction
-  game/     glue: the game loop, progress, achievements, challenge selection
-  render/   Three.js scene, meshes, car models, effects and cameras
-  ui/       HUD, banners, panels, dialogs, icons
   audio/    synthesised sound effects and the mute setting
-  storage/  versioned records, ghosts and preferences in localStorage
+  config/   constants, car definitions, achievement definitions, About credits
+  core/     pure, tested logic (RNG, maze generation, pathfinding, challenge codes, events)
+  game/     glue: the game loop, progress, achievements, challenge selection
   i18n/     message tables (zh-TW, en)
-tests/      unit tests, plus parity checks against the original prototype
-docs/       architecture notes and screenshots
+  input/    keyboard, swipe and on-screen pad → one wanted direction
+  render/   Three.js scene, meshes, car models, effects and cameras
+  sim/      the game rules: movement, chasers, fuel, gems, power-ups, phases (no DOM, no Three.js)
+  storage/  versioned records, ghosts and preferences in localStorage
+  ui/       HUD, banners, panels, dialogs, icons
+tests/      unit tests
 ```
 
 New here? Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
