@@ -6,6 +6,10 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- Driving into a red chaser that has not left home yet is now a crash, like any other chaser.
+
 ### Changed
 
 - The Traditional Chinese language is now labelled 正體中文.

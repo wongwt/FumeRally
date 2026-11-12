@@ -305,14 +305,27 @@ describe('chasers', () => {
     expect(crash).toHaveBeenCalledWith(expect.objectContaining({ why: 'caught' }));
   });
 
-  it('do not catch the player while still at home', () => {
+  it('a chaser still waiting at home is solid: driving into it is a crash', () => {
     const sim = chased();
     const en = sim.enemies[0] as Enemy;
     en.release = 5;
     park(sim, 13, 17);
     place(en, 13, 17);
     run(sim, DT * 3);
+    expect(sim.phase).toBe('dying');
+    expect(sim.crashWhy).toBe('caught');
+  });
+
+  it('while invincible a waiting chaser is not knocked out again for points', () => {
+    const sim = chased();
+    const en = sim.enemies[0] as Enemy;
+    en.release = 5;
+    sim.power = 5;
+    park(sim, 13, 17);
+    place(en, 13, 17);
+    run(sim, DT * 3);
     expect(sim.phase).toBe('play');
+    expect(sim.score).toBe(0);
   });
 
   it('a chaser eventually runs a stationary player down', () => {

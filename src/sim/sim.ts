@@ -438,9 +438,13 @@ export class Sim {
     }
 
     for (const en of this.enemies) {
-      if (!en.active || en.release > 0) continue;
+      if (!en.active) continue;
       if (Math.hypot(posX(en) - px, posY(en) - py) >= HIT_RADIUS) continue;
+      // A chaser still waiting at home is solid too: driving into it is a crash. (While invincible
+      // it is already out of play, so it is not knocked out, and scored, a second time.)
+      const waiting = en.release > 0;
       if (this.power > 0) {
+        if (waiting) continue;
         this.knockOut(en);
         this.knockPow += 1;
       } else if (en.stun <= 0 && this.hitT <= 0) {
