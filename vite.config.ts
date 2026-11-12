@@ -24,10 +24,23 @@ function embedNotices(): Plugin {
   };
 }
 
+/** Versions of the packages named in package.json, with the range prefix (^, ~) removed. */
+const pkg = JSON.parse(readFileSync('package.json', 'utf8')) as {
+  version: string;
+  dependencies?: Record<string, string>;
+  devDependencies?: Record<string, string>;
+};
+const versions: Record<string, string> = { __app__: pkg.version };
+for (const [name, range] of Object.entries({ ...pkg.devDependencies, ...pkg.dependencies })) {
+  versions[name] = range.replace(/^[^\d]*/, '');
+}
+
 // The production build inlines all JS/CSS into one dist/index.html so the game can be
 // played by double-clicking the file (no server, no CDN).
 export default defineConfig({
   base: './',
+  // the About dialog shows the game's and its tools' versions
+  define: { __PKG_VERSIONS__: JSON.stringify(versions) },
   plugins: [embedNotices(), viteSingleFile()],
   build: { target: 'es2022' },
   test: { include: ['tests/**/*.test.ts'] }

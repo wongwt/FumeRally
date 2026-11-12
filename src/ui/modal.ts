@@ -3,7 +3,7 @@ const FOCUSABLE =
 
 /**
  * A full-stage dialog (new car, achievements). Click the backdrop or any `[data-close]` to close it.
- * Focus moves into the dialog while it is open, stays there (Tab cycles), and returns afterwards.
+ * Focus moves into the dialog (to `[data-autofocus]` if present, else the first control) while it is open, stays there (Tab cycles), and returns afterwards.
  */
 export class Modal {
   private open = false;
@@ -38,7 +38,8 @@ export class Modal {
     this.el.innerHTML = html;
     this.el.hidden = false;
     this.open = true;
-    const first = this.el.querySelector<HTMLElement>(FOCUSABLE);
+    const first =
+      this.el.querySelector<HTMLElement>('[data-autofocus]') ?? this.el.querySelector<HTMLElement>(FOCUSABLE);
     if (first) {
       first.focus({ preventScroll: true });
     } else {

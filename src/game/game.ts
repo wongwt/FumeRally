@@ -25,6 +25,7 @@ import type { Records } from '../storage/records';
 import { Banner, type ScreenContext } from '../ui/banner';
 import type { Garage } from '../ui/garage';
 import { Modal } from '../ui/modal';
+import { aboutHtml } from '../ui/aboutModal';
 import { unlockModalHtml } from '../ui/unlockModal';
 import { achPanelHtml, achToastHtml, ToastQueue } from '../ui/achievementsUi';
 import type { ChallengePanel, PanelModel } from '../ui/challengePanel';
@@ -324,6 +325,14 @@ export class Game {
     if (this.sim.phase === 'play' || this.sim.phase === 'ready') this.sim.togglePause();
     this.input.clear();
     this.modal.show(achPanelHtml(this.achievements));
+  }
+
+  /** Opens the About dialog, pausing a running game first. */
+  openAbout(): void {
+    if (this.modal.isOpen) return;
+    if (this.sim.phase === 'play' || this.sim.phase === 'ready') this.sim.togglePause();
+    this.input.clear();
+    this.modal.show(aboutHtml());
   }
 
   togglePause(): void {

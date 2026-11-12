@@ -33,6 +33,11 @@ describe('Modal', () => {
     expect(document.activeElement?.id).toBe('a');
   });
 
+  it('focuses the [data-autofocus] control instead of the first one when there is one', () => {
+    modal.show('<a href="#x" id="link">x</a><button id="ok" data-autofocus data-close="1">OK</button>');
+    expect(document.activeElement?.id).toBe('ok');
+  });
+
   it('gives focus back when it closes, and reports it', () => {
     const onClose = vi.fn();
     modal.onClose = onClose;

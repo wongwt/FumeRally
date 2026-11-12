@@ -25,6 +25,7 @@ const btnView = $<HTMLButtonElement>('btnView');
 const btnLang = $<HTMLButtonElement>('btnLang');
 const btnMute = $<HTMLButtonElement>('btnMute');
 const btnAch = $<HTMLButtonElement>('btnAch');
+const btnAbout = $<HTMLButtonElement>('btnAbout');
 
 const storage = browserStorage();
 const records = new Records(storage);
@@ -55,6 +56,7 @@ function renderText(): void {
   btnLang.title = t('app.language');
   btnView.textContent = t(game?.view === 'full' ? 'view.full' : 'view.scroll');
   btnPause.textContent = t(game?.sim.phase === 'paused' ? 'btn.resume' : 'btn.pause');
+  btnAbout.textContent = t('btn.about');
   btnMute.textContent = t(audio.muted ? 'btn.unmute' : 'btn.mute');
   btnMute.setAttribute('aria-pressed', String(audio.muted));
   for (const el of document.querySelectorAll<HTMLElement>('[data-i18n-label]')) {
@@ -175,6 +177,11 @@ if (stage) {
     prefs.saveView();
     btnView.textContent = t(g.view === 'full' ? 'view.full' : 'view.scroll');
     btnView.blur();
+  });
+  btnAbout.addEventListener('click', () => {
+    audio.ensure();
+    g.openAbout();
+    btnAbout.blur();
   });
   btnAch.addEventListener('click', () => {
     audio.ensure();

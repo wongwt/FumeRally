@@ -835,6 +835,29 @@ button:disabled {
   justify-items: stretch;
   text-align: left;
 }
+.about .credits {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 6px;
+}
+.about .credits li {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+.about .credits span {
+  color: var(--dim);
+  font-size: 11px;
+}
+.about a {
+  color: var(--player);
+}
 .ach-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));

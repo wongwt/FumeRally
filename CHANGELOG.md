@@ -10,6 +10,12 @@ All notable changes to this project are documented here. The format follows
 
 - Driving into a red chaser that has not left home yet is now a crash, like any other chaser.
 
+### Added
+
+- An About button in the footer opens a dialog with the version, copyright and licence, a link to the
+  source, and the third-party software (three.js, Press Start 2P) and tools (TypeScript, Vite, Vitest,
+  ESLint, Prettier and others) the game is made with. Versions come from `package.json` at build time.
+
 ### Changed
 
 - The title card no longer repeats the key cheat sheet (the footer has it); the car-drives-itself and
