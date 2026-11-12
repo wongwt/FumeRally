@@ -38,16 +38,19 @@ const fmtDate = (ms: number): string => {
   return d.getMonth() + 1 + '/' + d.getDate();
 };
 
-/** The side panel: challenge mode, level code, ghost toggle and the leaderboard. */
+/** The challenge and leaderboard tabs: mode, level code, ghost toggle, start button and the board. */
 export class ChallengePanel {
   private readonly root = $('challenge');
   private readonly segs = [...this.root.querySelectorAll<HTMLButtonElement>('.seg-btn')];
   private readonly input = $<HTMLInputElement>('codeInput');
   private readonly rand = $<HTMLButtonElement>('btnRand');
   private readonly hint = $('codeHint');
+  /** The code label and field: they belong to the daily and level-code modes, not to normal play. */
+  private readonly codeFields = [...this.root.querySelectorAll<HTMLElement>('.codebox label, .coderow')];
   private readonly ghost = $<HTMLInputElement>('ghostToggle');
   private readonly start = $<HTMLButtonElement>('btnStartChal');
   private readonly board = $('board');
+  private readonly runInfo = $('runInfo');
 
   constructor(handlers: PanelHandlers) {
     for (const b of this.segs) {
@@ -83,6 +86,7 @@ export class ChallengePanel {
       b.setAttribute('aria-pressed', String(mode === m.mode));
       b.disabled = m.locked;
     }
+    for (const el of this.codeFields) el.hidden = m.mode === 'normal';
     // The field mirrors the mode: today's code (read-only), the typed code, or empty.
     const shown = m.mode === 'daily' ? m.dailyCode : m.mode === 'normal' ? '' : m.customCode;
     if (this.input.value !== shown) this.input.value = shown;
@@ -103,6 +107,7 @@ export class ChallengePanel {
     this.start.disabled = m.locked || !m.valid;
     this.start.textContent = t('btn.startGame');
     this.board.innerHTML = boardHtml(m);
+    this.runInfo.textContent = `${m.carName} · ${m.label}`;
   }
 
   focusCode(): void {

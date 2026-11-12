@@ -26,8 +26,7 @@ export const en: Messages = {
   'error.webgl.body': 'This browser or device has WebGL turned off, so the game cannot be shown.',
 
   'title.lead':
-    'Collect every gem and shake off the red chasers. Drop exhaust to freeze them when they get close, and watch out for rocks: one hit and you crash.',
-  'title.smoke': 'drops exhaust (uses fuel)',
+    'Collect every gem and shake off the red chasers. The car drives itself: you only steer. Drop exhaust (it uses fuel) to freeze chasers when they get close, and watch out for rocks: one hit and you crash.',
   'crash.caught': 'Caught!',
   'btn.smoke': 'Smoke',
   'ready.bonusTitle': '30 seconds',
@@ -57,7 +56,10 @@ export const en: Messages = {
   'code.hint.invalid': 'Enter at least 2 characters (letters, digits, - _ or Chinese).',
   'ghost.toggle': 'Ghost car (race your best run)',
   'btn.startGame': 'Start game',
-  'btn.challenges': 'Challenges',
+  'tab.car': 'Garage',
+  'tab.challenge': 'Mode',
+  'tab.board': 'Board',
+  'tabs.label': 'Garage, mode and leaderboard',
   'board.score': 'Score',
   'board.level': 'Stage',
   'board.time': 'Time',
@@ -186,8 +188,6 @@ export const en: Messages = {
   'ach.fun': 'Fun achievements',
   'ach.hidden': '???',
   'ach.locked': 'Not unlocked yet',
-  'ach.latest': 'Latest: {name}',
-  'ach.none': 'No achievements unlocked yet',
   'btn.achievements': 'Achievements {n}/{total}',
   'btn.close': 'Close',
   'dir.up': 'Up',
@@ -200,7 +200,6 @@ export const en: Messages = {
   'error.contextLost.title': 'Display interrupted',
   'error.contextLost.body':
     'The system reclaimed the graphics device. Wait a moment, or reload the page if it does not come back.',
-  'title.drive': 'to steer. The car drives itself',
   'cta.start': 'Press {key} or tap the screen to start',
   'cta.restart': 'Press {key} or tap the screen to play again',
   'cta.resume': 'Press {key} or tap the screen to resume',

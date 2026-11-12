@@ -12,6 +12,14 @@ All notable changes to this project are documented here. The format follows
 
 ### Changed
 
+- The title card no longer repeats the key cheat sheet (the footer has it); the car-drives-itself and
+  fuel notes moved into its intro text.
+- The right-hand panel is now split by moment: while driving it shows only the radar (and the car and
+  mode); on the title and game-over screens it is a tabbed menu with Garage, Mode and Board tabs and an
+  always-visible Start button; the level-code field only appears in the daily and level-code modes. The achievements block is gone from the panel (the footer button remains).
+- On phones the tabs float at the top of the stage and open a sheet over it, only on the title and game-over
+  screens. The footer "Challenges" button is removed so nothing of the menu can be hit by accident next to
+  the steering pad.
 - The Traditional Chinese language is now labelled 正體中文.
 - The English UI is just "Fume Rally", without the subtitle.
 - Mazes grow with the level: level 1 is 19 × 13 and the size steps up to 31 × 21 from level 13 (the old

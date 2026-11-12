@@ -9,6 +9,7 @@ import { bindTouch } from './input/touch';
 import { Stage3D } from './render/stage3d';
 import { Hud } from './ui/hud';
 import { Popups } from './ui/popups';
+import { SideTabs } from './ui/sideTabs';
 import { ChallengePanel } from './ui/challengePanel';
 import { Garage } from './ui/garage';
 import { Radar } from './ui/radar';
@@ -87,6 +88,7 @@ try {
 if (stage) {
   const s = stage;
   const playEl = $('play');
+  const tabs = new SideTabs(playEl, $('challenge'));
   const panel = new ChallengePanel({
     onMode: (mode) => game?.selectMode(mode),
     onCode: (raw) => game?.typeCode(raw),
@@ -105,19 +107,17 @@ if (stage) {
       garage: new Garage($('cars'), (id) => game?.selectCar(id)),
       modalEl: $('modal'),
       achToastEl: $('achToast'),
-      onAchChange: ({ count, total, latest }) => {
-        $('achCount').textContent = `${count} / ${total}`;
-        $('achLatest').textContent = latest ? t('ach.latest', { name: latest }) : t('ach.none');
+      onAchChange: ({ count, total }) => {
         btnAch.textContent = t('btn.achievements', { n: count, total });
       },
       onUnlockShown: () => sfx.clear(),
       onPhase: (sim) => {
         btnPause.textContent = t(sim.phase === 'paused' ? 'btn.resume' : 'btn.pause');
         playEl.classList.toggle('menu', sim.wantsStart); // touch pad only while a game is on
-        if (!sim.wantsStart) playEl.classList.remove('drawer'); // close the mobile challenge drawer once a game starts
+        if (!sim.wantsStart) tabs.closeSheet(); // close the phone menu sheet once a game starts
       },
       onInvalidStart: () => {
-        playEl.classList.add('drawer');
+        tabs.open('challenge');
         panel.focusCode();
       }
     },
@@ -176,16 +176,10 @@ if (stage) {
     btnView.textContent = t(g.view === 'full' ? 'view.full' : 'view.scroll');
     btnView.blur();
   });
-  for (const b of [btnAch, $('btnAchPanel')]) {
-    b.addEventListener('click', () => {
-      audio.ensure();
-      g.openAchievements();
-      b.blur();
-    });
-  }
-  $('btnChal').addEventListener('click', () => {
-    playEl.classList.toggle('drawer');
-    $('btnChal').blur();
+  btnAch.addEventListener('click', () => {
+    audio.ensure();
+    g.openAchievements();
+    btnAch.blur();
   });
   window.addEventListener('pagehide', () => records.save());
   document.addEventListener('visibilitychange', () => {

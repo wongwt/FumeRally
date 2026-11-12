@@ -400,9 +400,6 @@ button:focus-visible {
   border-radius: 6px;
   pointer-events: none;
 }
-.play.scroll .radar {
-  display: flex;
-}
 .radar-title {
   margin: 0;
   font: 9px/1 var(--font-pixel);
@@ -434,38 +431,30 @@ button:focus-visible {
   margin-right: 6px;
   vertical-align: -1px;
 }
-@media (max-width: 720px) {
-  .side,
-  .play.scroll .side {
-    display: contents;
-  }
-  .radar {
-    display: none;
-  }
-  .play.scroll .radar {
-    display: flex;
-    position: absolute;
-    z-index: 2;
-    top: 8px;
-    right: 8px;
-    width: 118px;
-    padding: 6px;
-    gap: 4px;
-    opacity: 0.94;
-  }
-  .radar-key,
-  .radar-title {
-    display: none;
-  }
+/* ---------- Tabbed menu ---------- */
+.runinfo {
+  margin: 0;
+  font-size: 11px;
+  color: var(--dim);
+  overflow-wrap: anywhere;
 }
 
-/* ---------- Challenge panel ---------- */
-.narrow-only {
+/* While a game runs the side shows the radar (follow view only); on the title and game-over
+   screens it shows the tabbed menu instead. */
+.play:not(.menu).scroll .radar {
+  display: flex;
+}
+.play:not(.menu):not(.scroll) .side {
   display: none;
 }
-.challenge {
-  flex: 1 0 auto;
+.menu-panel {
+  display: none;
+}
+.play.menu .menu-panel {
   display: flex;
+}
+.menu-panel {
+  flex: 1 0 auto;
   flex-direction: column;
   gap: 10px;
   padding: 10px;
@@ -474,6 +463,31 @@ button:focus-visible {
   border-radius: 6px;
   font-size: 12px;
   min-width: 0;
+}
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+.tabs button {
+  padding: 8px 2px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  background: var(--bg);
+}
+.tabs button[aria-selected='true'] {
+  background: var(--line);
+  border-color: var(--player);
+  color: var(--fg);
+}
+.tabpane {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.tabpane[hidden] {
+  display: none;
 }
 .seg {
   display: grid;
@@ -552,6 +566,8 @@ button:focus-visible {
   margin: 0;
 }
 .start-btn {
+  position: sticky;
+  bottom: 0;
   border-color: var(--player);
   color: var(--fg);
   padding: 10px 14px;
@@ -647,24 +663,6 @@ button:disabled {
 @media (min-width: 721px) {
   .banner .records {
     display: none;
-  }
-}
-
-/* Narrow screens: the challenge panel becomes a drawer opened from the footer.
-   Kept last so it overrides the desktop rules above. */
-@media (max-width: 720px) {
-  .challenge {
-    display: none;
-  }
-  .play.drawer .challenge {
-    display: flex;
-    position: absolute;
-    inset: 8px;
-    z-index: 3;
-    overflow: auto;
-  }
-  .narrow-only {
-    display: inline-block;
   }
 }
 
@@ -795,28 +793,6 @@ button:disabled {
 }
 
 /* ---------- Achievements ---------- */
-.achbox {
-  display: grid;
-  gap: 6px;
-}
-.ach-open {
-  display: grid;
-  gap: 3px;
-  width: 100%;
-  text-align: left;
-  padding: 8px 10px;
-  background: var(--bg);
-  letter-spacing: 0.02em;
-}
-.ach-open b {
-  font: 11px/1.4 var(--font-pixel);
-  color: var(--gem);
-}
-.ach-open span {
-  font-size: 11px;
-  color: var(--dim);
-  font-weight: 400;
-}
 .achtoast {
   position: absolute;
   z-index: 4;
@@ -973,6 +949,7 @@ button {
     display: none;
   }
   .tools button,
+  .tabs button,
   .seg button,
   .coderow button,
   .start-btn {
@@ -1020,8 +997,7 @@ button {
   }
 }
 @media (max-width: 720px) {
-  .banner .intro,
-  .banner .legend li:nth-child(n + 3) {
+  .banner .intro {
     display: none;
   }
 }
@@ -1037,6 +1013,59 @@ button {
   .banner .intro,
   .banner .legend,
   .banner .records {
+    display: none;
+  }
+}
+
+/* ---------- Phones: radar overlay while playing, tabs + sheet in the menus ----------
+   Nothing of the menu is reachable while a game runs, so it cannot be tapped by accident
+   next to the steering pad. Kept last so it overrides the desktop rules above. */
+@media (max-width: 720px) {
+  .side {
+    display: contents;
+  }
+  .play:not(.menu).scroll .radar {
+    position: absolute;
+    z-index: 2;
+    top: 8px;
+    right: 8px;
+    width: 118px;
+    padding: 6px;
+    gap: 4px;
+    opacity: 0.94;
+  }
+  .radar-key,
+  .radar-title,
+  .runinfo {
+    display: none;
+  }
+  .play.menu .menu-panel {
+    position: absolute;
+    z-index: 3;
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    padding: 0;
+    gap: 8px;
+    background: none;
+    border: none;
+  }
+  .play.menu .tabs button {
+    background: rgba(14, 34, 48, 0.9);
+  }
+  .play.menu:not(.sheet) .menu-panel .tabpane,
+  .play.menu:not(.sheet) .menu-panel .start-btn {
+    display: none;
+  }
+  .play.menu.sheet .menu-panel {
+    max-height: calc(100% - 16px);
+    padding: 10px;
+    overflow: auto;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+  }
+  .play.menu.sheet .menu-panel .tabpane[hidden] {
     display: none;
   }
 }
